@@ -82,6 +82,7 @@ tr.sep td{border-bottom:2px solid var(--ink)}
 input[type=date],input[type=number]{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:.35em .5em;max-width:100%}
 input[type=number]{width:7.5em}
 button{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:1px solid var(--ink);border-radius:999px;padding:.3em 1em;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
 button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
 button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--brass);outline-offset:2px}
 .radio{display:flex;flex-direction:column;gap:.3em;font-size:.92rem}
@@ -380,24 +381,44 @@ ol.steps li{margin-bottom:.3em}
     return {dawn,dusk};
   }
   const hmPlain = ms => { const d=new Date(ms); return d.getHours()+':'+pad(d.getMinutes()); };
-  function openSheet(){
+  // 設定済みの鐘(分単位のタイムスタンプ)を覚えておく
+  const minuteKey = ms => Math.round(ms/60000);
+  function getSent(){ try{ return JSON.parse(localStorage.getItem('wadokei-sent')||'[]'); }catch(e){ return []; } }
+  function addSent(list){
+    const now=minuteKey(Date.now());
+    const keep=getSent().filter(k=>k>=now-60).concat(list);
+    try{ localStorage.setItem('wadokei-sent', JSON.stringify([...new Set(keep)])); }catch(e){}
+  }
+  const isSent = ms => getSent().includes(minuteKey(ms));
+  function setOpt(box,label,ms){
+    const done=isSent(ms);
+    const tomorrow=new Date(ms).getDate()!==new Date().getDate()?'(明日)':'';
+    box.checked=!done; box.disabled=done;
+    label.textContent=hm(ms)+tomorrow+(done?' 設定済み':'');
+  }
+  function openSheet(auto){
     const n=nextSix();
-    if(!n.dawn||!n.dusk){ alert('この場所・季節では六つの時刻が定まりません。'); return; }
-    $('tDawn').textContent=hm(n.dawn)+(new Date(n.dawn).getDate()!==new Date().getDate()?'(明日)':'');
-    $('tDusk').textContent=hm(n.dusk)+(new Date(n.dusk).getDate()!==new Date().getDate()?'(明日)':'');
+    if(!n.dawn||!n.dusk){ if(!auto) alert('この場所・季節では六つの時刻が定まりません。'); return; }
+    const allDone=isSent(n.dawn)&&isSent(n.dusk);
+    if(auto && allDone) return;
+    setOpt($('optDawn'),$('tDawn'),n.dawn);
+    setOpt($('optDusk'),$('tDusk'),n.dusk);
     $('sheet').dataset.dawn=n.dawn; $('sheet').dataset.dusk=n.dusk;
-    $('sheetMsg').textContent='';
-    $('sheet').classList.add('open'); $('sheetYes').focus();
+    $('sheetYes').disabled=allDone;
+    $('sheetMsg').textContent=allDone?'次の明け六つ・暮れ六つはどちらも設定済みです。':'';
+    $('sheet').classList.add('open'); (allDone?$('sheetX'):$('sheetYes')).focus();
   }
   function closeSheet(){ $('sheet').classList.remove('open'); }
   function markAsked(){ try{ localStorage.setItem('wadokei-asked', new Date().toDateString()); }catch(e){} }
   $('sheetNo').addEventListener('click',()=>{ markAsked(); closeSheet(); });
   $('sheetYes').addEventListener('click',()=>{
-    const times=[];
-    if($('optDawn').checked) times.push(hmPlain(+$('sheet').dataset.dawn));
-    if($('optDusk').checked) times.push(hmPlain(+$('sheet').dataset.dusk));
+    const times=[], sent=[];
+    const dawn=+$('sheet').dataset.dawn, dusk=+$('sheet').dataset.dusk;
+    if($('optDawn').checked && !$('optDawn').disabled){ times.push(hmPlain(dawn)); sent.push(minuteKey(dawn)); }
+    if($('optDusk').checked && !$('optDusk').disabled){ times.push(hmPlain(dusk)); sent.push(minuteKey(dusk)); }
     if(!times.length){ $('sheetMsg').textContent='設定する鐘を一つ以上選んでください。'; return; }
     const url='shortcuts://run-shortcut?name='+encodeURIComponent(SHORTCUT)+'&input=text&text='+encodeURIComponent(times.join(','));
+    addSent(sent);
     markAsked();
     closeSheet();
     requestAnimationFrame(()=>setTimeout(()=>{ window.location.href=url; },120));
@@ -407,11 +428,11 @@ ol.steps li{margin-bottom:.3em}
   const closeIfDone=()=>{ if(document.visibilityState==='visible' && askedToday()) closeSheet(); };
   document.addEventListener('visibilitychange',closeIfDone);
   window.addEventListener('pageshow',closeIfDone);
-  $('alarmBtn').addEventListener('click',openSheet);
+  $('alarmBtn').addEventListener('click',()=>openSheet(false));
   if(!isIOS){ $('alarmField').style.display='none'; }
   else{
     let asked=''; try{ asked=localStorage.getItem('wadokei-asked')||''; }catch(e){}
-    if(asked!==new Date().toDateString()) setTimeout(openSheet,600);
+    if(asked!==new Date().toDateString()) setTimeout(()=>openSheet(true),600);
   }
 
   syncLL(); setDateInput(); render();
