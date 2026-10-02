@@ -92,7 +92,9 @@ details summary{cursor:pointer;font-size:.85rem;color:var(--sub);margin-top:.5em
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;display:none;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px))}
 .sheet.open{display:flex}
 .sheet-in{width:100%;max-width:440px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:0 10px 40px rgba(10,15,35,.35)}
-.sheet h3{font-family:var(--serif);font-size:1.1rem;margin:0 0 .5em;letter-spacing:.06em}
+.sheet-in{position:relative}
+.sheet-x{position:absolute;top:8px;right:8px;width:36px;height:36px;padding:0;border:none;border-radius:50%;font-size:1.3rem;line-height:1;color:var(--sub)}
+.sheet h3{padding-right:2em;font-family:var(--serif);font-size:1.1rem;margin:0 0 .5em;letter-spacing:.06em}
 .sheet .opt{display:flex;gap:.6em;align-items:baseline;padding:.4em 0;border-bottom:1px solid var(--line);font-size:.98rem}
 .sheet .opt b{font-family:var(--serif);min-width:5em}
 .sheet .opt span{font-variant-numeric:tabular-nums;color:var(--sub)}
@@ -100,6 +102,8 @@ details summary{cursor:pointer;font-size:.85rem;color:var(--sub);margin-top:.5em
 .primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .primary:hover{background:var(--ink);opacity:.88}
 .small{font-size:.82rem;color:var(--sub);margin:.6em 0 0}
+.small a,.linkbtn{color:var(--ink)}
+a.linkbtn{display:inline-block;font-size:.9rem;text-decoration:none;border:1px solid var(--ink);border-radius:999px;padding:.3em 1em}
 ol.steps{padding-left:1.3em;margin:.5em 0 0;font-size:.86rem}
 ol.steps li{margin-bottom:.3em}
 .note{font-size:.82rem;color:var(--sub);margin-top:clamp(24px,4vw,40px);max-width:44em;line-height:1.8}
@@ -157,17 +161,8 @@ ol.steps li{margin-bottom:.3em}
       <div class="field" id="alarmField">
         <span class="label">アラーム(iPhone)</span>
         <div class="row"><button id="alarmBtn" type="button">明け六つ・暮れ六つにアラームを設定</button></div>
-        <details>
-          <summary>はじめに一度だけショートカットを用意する</summary>
-          <ol class="steps">
-            <li>「ショートカット」Appで＋を押し、名前を「和時計アラーム」にする</li>
-            <li>アクション「テキストを分割」を追加し、テキストを「ショートカットの入力」、区切りを「カスタム」の「,」にする</li>
-            <li>「各項目を繰り返す」を追加</li>
-            <li>繰り返しの中に「入力から日付を取得」を追加(入力は「繰り返し項目」)</li>
-            <li>その下に「アラームを作成」を追加し、時刻に「日付」、ラベルを「和時計の鐘」にする</li>
-          </ol>
-          <p class="small">このページからは時刻だけを渡し、アラームはショートカットが時計Appに作ります。</p>
-        </details>
+        <p class="small">はじめに一度だけ、アラームを作るショートカットをiPhoneに追加してください。名前は「和時計アラーム」のまま変えないでください。</p>
+        <div class="row" style="margin-top:.5em"><a class="linkbtn" href="https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57" target="_blank" rel="noopener">ショートカットを追加</a></div>
       </div>
       <div class="field">
         <span class="label">六つの決め方</span>
@@ -184,10 +179,12 @@ ol.steps li{margin-bottom:.3em}
 
 <div class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="sheetTitle">
   <div class="sheet-in">
+    <button type="button" class="sheet-x" id="sheetX" aria-label="閉じる">×</button>
     <h3 id="sheetTitle">鐘の時刻にアラームを設定しますか？</h3>
     <label class="opt"><input type="checkbox" id="optDawn" checked><b>明け六つ</b><span id="tDawn">--:--</span></label>
     <label class="opt"><input type="checkbox" id="optDusk" checked><b>暮れ六つ</b><span id="tDusk">--:--</span></label>
     <p class="small">iPhoneの「和時計アラーム」ショートカットが開き、時計Appにアラームが作られます。六つの時刻は毎日少しずつずれるので、そのつど設定し直してください。</p>
+    <p class="small">ショートカットがまだの場合は、先に<a href="https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57" target="_blank" rel="noopener">ショートカットを追加</a>してください。</p>
     <div class="acts">
       <button type="button" id="sheetNo">今日は設定しない</button>
       <button type="button" class="primary" id="sheetYes">設定する</button>
@@ -403,8 +400,13 @@ ol.steps li{margin-bottom:.3em}
     const url='shortcuts://run-shortcut?name='+encodeURIComponent(SHORTCUT)+'&input=text&text='+encodeURIComponent(times.join(','));
     markAsked();
     closeSheet();
-    window.location.href=url;
+    requestAnimationFrame(()=>setTimeout(()=>{ window.location.href=url; },120));
   });
+  $('sheetX').addEventListener('click',()=>{ markAsked(); closeSheet(); });
+  function askedToday(){ try{ return localStorage.getItem('wadokei-asked')===new Date().toDateString(); }catch(e){ return false; } }
+  const closeIfDone=()=>{ if(document.visibilityState==='visible' && askedToday()) closeSheet(); };
+  document.addEventListener('visibilitychange',closeIfDone);
+  window.addEventListener('pageshow',closeIfDone);
   $('alarmBtn').addEventListener('click',openSheet);
   if(!isIOS){ $('alarmField').style.display='none'; }
   else{
