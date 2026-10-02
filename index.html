@@ -402,8 +402,8 @@ ol.steps li{margin-bottom:.3em}
     if(!times.length){ $('sheetMsg').textContent='設定する鐘を一つ以上選んでください。'; return; }
     const url='shortcuts://run-shortcut?name='+encodeURIComponent(SHORTCUT)+'&input=text&text='+encodeURIComponent(times.join(','));
     markAsked();
+    closeSheet();
     window.location.href=url;
-    $('sheetMsg').textContent='ショートカットが開かない場合は、設定欄の手順で「'+SHORTCUT+'」を作ってあるか確認してください。時刻:'+times.join('、');
   });
   $('alarmBtn').addEventListener('click',openSheet);
   if(!isIOS){ $('alarmField').style.display='none'; }
