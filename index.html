@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>和時計 — 不定時法でいまを知る</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="和時計">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#22305a">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e4e7e3; --ink:#1d2433; --sub:#5a6272; --line:#c3c8c2;
+  --ai:#22305a; --ai-deep:#151e3b; --brass:#b48a3c; --brass-hi:#d9b46a;
+  --day:#e9d9ae; --night:#2c3a68; --shu:#a8402e; --panel:#eef0ec;
+  --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#10162a; --ink:#e7e4da; --sub:#9aa1b3; --line:#2b3456;
+    --ai:#1a2448; --ai-deep:#0c1124; --brass:#c79c4a; --brass-hi:#e6c37a;
+    --day:#cdb67b; --night:#26315a; --shu:#d0705c; --panel:#161d36;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#10162a; --ink:#e7e4da; --sub:#9aa1b3; --line:#2b3456;
+  --ai:#1a2448; --ai-deep:#0c1124; --brass:#c79c4a; --brass-hi:#e6c37a;
+  --day:#cdb67b; --night:#26315a; --shu:#d0705c; --panel:#161d36;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.7;-webkit-font-smoothing:antialiased}
+main{max-width:1040px;margin:0 auto;padding:clamp(16px,4vw,40px)}
+h1{font-family:var(--serif);font-weight:800;font-size:clamp(1.5rem,3.2vw,2rem);letter-spacing:.12em;margin:0 0 .2em}
+.lede{color:var(--sub);margin:0 0 1.6rem;max-width:40em;font-size:.95rem}
+
+.stage{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:center}
+@media (max-width:760px){.stage{grid-template-columns:1fr}}
+
+.dial-wrap{position:relative;width:100%;max-width:520px;margin:0 auto}
+.dial-wrap svg{width:100%;height:auto;display:block}
+
+.reading{display:flex;gap:clamp(16px,3vw,32px);align-items:flex-start;justify-content:center}
+.tate{writing-mode:vertical-rl;text-orientation:upright;font-family:var(--serif);line-height:1.1}
+.tate .big{font-size:clamp(3.6rem,9vw,6rem);font-weight:800;letter-spacing:.06em}
+.tate .eto{font-size:clamp(1.2rem,2.6vw,1.6rem);font-weight:700;color:var(--shu);margin-right:.4em;letter-spacing:.2em}
+.facts{font-size:.95rem;min-width:0}
+.facts dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.35em 1em}
+.facts dt{color:var(--sub)}
+.facts dd{margin:0;font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:.9em 0 .3em}
+.bar i{display:block;height:100%;background:var(--brass);width:0}
+.clock{font-family:var(--serif);font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:.6em}
+
+.lower{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);margin-top:clamp(28px,5vw,48px)}
+@media (max-width:760px){.lower{grid-template-columns:1fr}}
+h2{font-family:var(--serif);font-size:1.15rem;letter-spacing:.1em;margin:0 0 .6em;font-weight:700}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.42em .6em;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:500;color:var(--sub);font-size:.82rem}
+td.n{font-family:var(--serif);font-weight:700;font-size:1.02rem}
+td.t{font-variant-numeric:tabular-nums}
+tr.now td{background:color-mix(in srgb,var(--brass) 22%,transparent)}
+tr.sep td{border-bottom:2px solid var(--ink)}
+
+.settings{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.field{margin-bottom:1.1em}
+.field:last-child{margin-bottom:0}
+.label{display:block;font-size:.85rem;color:var(--sub);margin-bottom:.35em}
+.row{display:flex;flex-wrap:wrap;gap:.5em;align-items:center}
+input[type=date],input[type=number]{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:.35em .5em;max-width:100%}
+input[type=number]{width:7.5em}
+button{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:1px solid var(--ink);border-radius:999px;padding:.3em 1em;cursor:pointer}
+button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--brass);outline-offset:2px}
+.radio{display:flex;flex-direction:column;gap:.3em;font-size:.92rem}
+.radio label{display:flex;gap:.5em;align-items:baseline;cursor:pointer;border-radius:4px}
+.place{font-family:var(--serif);font-weight:700}
+.msg{font-size:.85rem;color:var(--shu);min-height:1.2em;margin-top:.3em}
+details summary{cursor:pointer;font-size:.85rem;color:var(--sub);margin-top:.5em}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;display:none;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.sheet.open{display:flex}
+.sheet-in{width:100%;max-width:440px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:0 10px 40px rgba(10,15,35,.35)}
+.sheet h3{font-family:var(--serif);font-size:1.1rem;margin:0 0 .5em;letter-spacing:.06em}
+.sheet .opt{display:flex;gap:.6em;align-items:baseline;padding:.4em 0;border-bottom:1px solid var(--line);font-size:.98rem}
+.sheet .opt b{font-family:var(--serif);min-width:5em}
+.sheet .opt span{font-variant-numeric:tabular-nums;color:var(--sub)}
+.sheet .acts{display:flex;gap:.6em;justify-content:flex-end;margin-top:1em;flex-wrap:wrap}
+.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.primary:hover{background:var(--ink);opacity:.88}
+.small{font-size:.82rem;color:var(--sub);margin:.6em 0 0}
+ol.steps{padding-left:1.3em;margin:.5em 0 0;font-size:.86rem}
+ol.steps li{margin-bottom:.3em}
+.note{font-size:.82rem;color:var(--sub);margin-top:clamp(24px,4vw,40px);max-width:44em;line-height:1.8}
+</style>
+</head>
+<body>
+<main>
+  <h1>和時計</h1>
+  <p class="lede">江戸の時刻は、日の出前の「明け六つ」と日没後の「暮れ六つ」を境に昼と夜をそれぞれ六等分していました。季節で一刻の長さが伸び縮みする、その日の太陽にあわせた時刻を表示します。</p>
+
+  <section class="stage">
+    <div class="dial-wrap"><svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="和時計の文字盤"></svg></div>
+    <div>
+      <div class="reading">
+        <div class="tate" aria-live="polite"><span class="big" id="bigName">—</span><span class="eto" id="etoName"></span></div>
+        <div class="facts">
+          <div class="clock" id="modern">--:--:--</div>
+          <dl>
+            <dt>刻の内</dt><dd id="quarter">—</dd>
+            <dt>次の鐘</dt><dd id="next">—</dd>
+            <dt>この一刻</dt><dd id="len">—</dd>
+          </dl>
+          <div class="bar" aria-hidden="true"><i id="prog"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lower">
+    <div>
+      <h2 id="schedTitle">今日の鐘</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>鐘</th><th>刻</th><th>現代時刻</th><th>一刻の長さ</th></tr></thead>
+        <tbody id="sched"></tbody>
+      </table></div>
+    </div>
+    <div class="settings">
+      <div class="field">
+        <span class="label">場所</span>
+        <div class="row"><span class="place" id="placeName">江戸・日本橋</span><button id="geoBtn" type="button">現在地を使う</button></div>
+        <div class="msg" id="geoMsg"></div>
+        <details>
+          <summary>緯度・経度を入力する</summary>
+          <div class="row" style="margin-top:.5em">
+            <input type="number" id="lat" step="0.01" min="-66" max="66" aria-label="緯度">
+            <input type="number" id="lon" step="0.01" min="-180" max="180" aria-label="経度">
+            <button id="applyLL" type="button">反映</button>
+          </div>
+        </details>
+      </div>
+      <div class="field">
+        <label class="label" for="date">日付</label>
+        <div class="row"><input type="date" id="date"><button id="todayBtn" type="button">今日に戻す</button></div>
+      </div>
+      <div class="field" id="alarmField">
+        <span class="label">アラーム(iPhone)</span>
+        <div class="row"><button id="alarmBtn" type="button">明け六つ・暮れ六つにアラームを設定</button></div>
+        <details>
+          <summary>はじめに一度だけショートカットを用意する</summary>
+          <ol class="steps">
+            <li>「ショートカット」Appで＋を押し、名前を「和時計アラーム」にする</li>
+            <li>アクション「テキストを分割」を追加し、テキストを「ショートカットの入力」、区切りを「カスタム」の「,」にする</li>
+            <li>「各項目を繰り返す」を追加</li>
+            <li>繰り返しの中に「入力から日付を取得」を追加(入力は「繰り返し項目」)</li>
+            <li>その下に「アラームを作成」を追加し、時刻に「日付」、ラベルを「和時計の鐘」にする</li>
+          </ol>
+          <p class="small">このページからは時刻だけを渡し、アラームはショートカットが時計Appに作ります。</p>
+        </details>
+      </div>
+      <div class="field">
+        <span class="label">六つの決め方</span>
+        <div class="radio">
+          <label><input type="radio" name="def" value="kansei" checked> 寛政暦(太陽が地平線下 7°21′40″)</label>
+          <label><input type="radio" name="def" value="sun"> 日の出・日の入り</label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="note">鐘の名は「明け六つ・五つ・四つ・九つ・八つ・七つ」の順に数が減り、昼と夜で繰り返します。各刻は鐘が鳴った時点から始まるものとし、刻の中ほどを「半」(例:九つ半)と呼んでいます。「刻の内」は一刻を四つに分けた位置で、丑の刻の三つめがいわゆる丑三つ時です。刻の区切り方には時代や地域で諸説あります。日付を変えると、そのときの時計の針の位置をその日の太陽に当てはめて表示します。</p>
+</main>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="sheetTitle">
+  <div class="sheet-in">
+    <h3 id="sheetTitle">鐘の時刻にアラームを設定しますか？</h3>
+    <label class="opt"><input type="checkbox" id="optDawn" checked><b>明け六つ</b><span id="tDawn">--:--</span></label>
+    <label class="opt"><input type="checkbox" id="optDusk" checked><b>暮れ六つ</b><span id="tDusk">--:--</span></label>
+    <p class="small">iPhoneの「和時計アラーム」ショートカットが開き、時計Appにアラームが作られます。六つの時刻は毎日少しずつずれるので、そのつど設定し直してください。</p>
+    <div class="acts">
+      <button type="button" id="sheetNo">今日は設定しない</button>
+      <button type="button" class="primary" id="sheetYes">設定する</button>
+    </div>
+    <p class="small" id="sheetMsg" style="color:var(--shu)"></p>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ETO  = ['卯','辰','巳','午','未','申','酉','戌','亥','子','丑','寅'];
+  const BELL = ['明け六つ','五つ','四つ','九つ','八つ','七つ','暮れ六つ','五つ','四つ','九つ','八つ','七つ'];
+  const NUM  = ['六','五','四','九','八','七','六','五','四','九','八','七'];
+  const QTR  = ['一つ','二つ','三つ','四つ'];
+  const DEF_H0 = { kansei: -(7 + 21/60 + 40/3600), sun: -0.833 };
+  const rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
+
+  const state = { lat:35.684, lon:139.774, place:'江戸・日本橋', def:'kansei', dateOffsetDays:0 };
+  try{
+    const s = JSON.parse(localStorage.getItem('wadokei') || 'null');
+    if(s && typeof s.lat==='number'){ Object.assign(state,{lat:s.lat,lon:s.lon,place:s.place||state.place,def:s.def||'kansei'}); }
+  }catch(e){}
+  function save(){ try{ localStorage.setItem('wadokei', JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,def:state.def})); }catch(e){} }
+
+  // ---- 太陽計算:指定した地方日付の、太陽高度 h0 の時刻(朝・夕)を返す ----
+  function sunEvents(y,m,d,h0){
+    const lat=state.lat, lon=state.lon;
+    const noonGuess = Date.UTC(y,m,d,12) - lon/15*3600000;
+    const n = noonGuess/86400000 + 2440587.5 - 2451545.0;
+    const L = (280.460 + 0.9856474*n) % 360;
+    const g = rad((357.528 + 0.9856003*n) % 360);
+    const lam = rad(L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g));
+    const eps = rad(23.439 - 0.0000004*n);
+    const ra = deg(Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam)));
+    const dec = Math.asin(Math.sin(eps)*Math.sin(lam));
+    let e = L - ra; e = ((e+540)%360)-180;
+    const eotMin = 4*e;
+    const noonUTC = Date.UTC(y,m,d,0) + (720 - 4*lon - eotMin)*60000;
+    const cosH = (Math.sin(rad(h0)) - Math.sin(rad(lat))*Math.sin(dec)) / (Math.cos(rad(lat))*Math.cos(dec));
+    if(cosH > 1 || cosH < -1) return null;
+    const H = deg(Math.acos(cosH));
+    return { dawn: noonUTC - 4*H*60000, dusk: noonUTC + 4*H*60000, noon: noonUTC };
+  }
+  function eventsFor(dateObj){
+    return sunEvents(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), DEF_H0[state.def]);
+  }
+  function addDays(dt,k){ const x=new Date(dt); x.setDate(x.getDate()+k); return x; }
+
+  // その地方日付 d の明け六つから翌日の明け六つまでの12の鐘
+  function bellsOfDay(dt){
+    const a = eventsFor(dt), b = eventsFor(addDays(dt,1));
+    if(!a || !b) return null;
+    const out=[]; const dl=(a.dusk-a.dawn)/6, nl=(b.dawn-a.dusk)/6;
+    for(let k=0;k<6;k++) out.push({t:a.dawn+k*dl, i:k, len:dl, day:true});
+    for(let k=0;k<6;k++) out.push({t:a.dusk+k*nl, i:k+6, len:nl, day:false});
+    return out;
+  }
+
+  // ---- 表示 ----
+  const $ = id => document.getElementById(id);
+  const pad = v => String(v).padStart(2,'0');
+  const hm = ms => { const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+  const dur = ms => { const m=Math.round(ms/60000); return Math.floor(m/60)+'時間'+pad(m%60)+'分'; };
+  const minutesOfDay = ms => { const d=new Date(ms); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; };
+
+  // 文字盤:正午を上、真夜中を下にした24時間盤
+  const C=200;
+  const pt = (min,r) => { const a=rad(min/1440*360+180); return [C+r*Math.sin(a), C-r*Math.cos(a)]; };
+  function sector(m1,m2,r1,r2){
+    let span=((m2-m1)%1440+1440)%1440; const large= span>720?1:0;
+    const [x1,y1]=pt(m1,r2),[x2,y2]=pt(m2,r2),[x3,y3]=pt(m2,r1),[x4,y4]=pt(m1,r1);
+    return `M${x1} ${y1} A${r2} ${r2} 0 ${large} 1 ${x2} ${y2} L${x3} ${y3} A${r1} ${r1} 0 ${large} 0 ${x4} ${y4}Z`;
+  }
+  function drawDial(bells, nowMs){
+    const svg=$('dial');
+    if(!bells){ svg.innerHTML=`<circle cx="200" cy="200" r="190" fill="var(--ai)"/><text x="200" y="205" text-anchor="middle" fill="var(--paper)" font-size="16">この日は六つが定まりません</text>`; return; }
+    const dawn=minutesOfDay(bells[0].t), dusk=minutesOfDay(bells[6].t);
+    let s='';
+    s+=`<circle cx="200" cy="200" r="198" fill="var(--brass)"/>`;
+    s+=`<circle cx="200" cy="200" r="190" fill="var(--ai-deep)"/>`;
+    s+=`<path d="${sector(dusk,dawn,112,182)}" fill="var(--night)"/>`;
+    s+=`<path d="${sector(dawn,dusk,112,182)}" fill="var(--day)" opacity=".92"/>`;
+    // 現代の1時間目盛り
+    for(let h=0;h<24;h++){
+      const [x1,y1]=pt(h*60,184),[x2,y2]=pt(h*60,h%6?188:192);
+      s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--brass-hi)" stroke-width="${h%6?1:2}"/>`;
+    }
+    [[0,'0'],[6,'6'],[12,'12'],[18,'18']].forEach(([h,l])=>{
+      const [x,y]=pt(h*60,92); s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" fill="var(--brass-hi)" font-family="var(--sans)" opacity=".8">${l}時</text>`;
+    });
+    // 割駒(鐘の位置)
+    bells.forEach(b=>{
+      const m=minutesOfDay(b.t);
+      const [lx1,ly1]=pt(m,112),[lx2,ly2]=pt(m,182);
+      s+=`<line x1="${lx1}" y1="${ly1}" x2="${lx2}" y2="${ly2}" stroke="var(--brass)" stroke-width="1.4"/>`;
+      const [x,y]=pt(m+ (b.len/60000)/2 ,163), [ex,ey]=pt(m+(b.len/60000)/2,128);
+      const fill = b.day ? 'var(--ai-deep)' : 'var(--day)';
+      s+=`<text x="${x}" y="${y+8}" text-anchor="middle" font-size="22" font-weight="800" font-family="var(--serif)" fill="${fill}">${NUM[b.i]}</text>`;
+      s+=`<text x="${ex}" y="${ey+6}" text-anchor="middle" font-size="15" font-weight="700" font-family="var(--serif)" fill="${b.day?'var(--shu)':'var(--brass-hi)'}">${ETO[b.i]}</text>`;
+    });
+    // 針
+    const nm=minutesOfDay(nowMs), [hx,hy]=pt(nm,186), [tx,ty]=pt(nm,-26);
+    s+=`<line x1="${tx}" y1="${ty}" x2="${hx}" y2="${hy}" stroke="var(--brass-hi)" stroke-width="3.5" stroke-linecap="round"/>`;
+    s+=`<circle cx="200" cy="200" r="11" fill="var(--brass)"/><circle cx="200" cy="200" r="4" fill="var(--ai-deep)"/>`;
+    svg.innerHTML=s;
+  }
+
+  function virtualNow(){
+    const now=new Date();
+    if(!state.dateOffsetDays) return now.getTime();
+    return addDays(now,state.dateOffsetDays).getTime();
+  }
+
+  function render(){
+    const nowMs=virtualNow(), nowD=new Date(nowMs);
+    const today=new Date(nowD.getFullYear(),nowD.getMonth(),nowD.getDate());
+    const prev=bellsOfDay(addDays(today,-1)), cur=bellsOfDay(today), nxt=bellsOfDay(addDays(today,1));
+    $('modern').textContent = pad(nowD.getHours())+':'+pad(nowD.getMinutes())+':'+pad(nowD.getSeconds());
+
+    if(!prev||!cur||!nxt){
+      $('bigName').textContent='—'; $('etoName').textContent='';
+      ['quarter','next','len'].forEach(k=>$(k).textContent='白夜・極夜のため計算できません');
+      $('sched').innerHTML=''; drawDial(null,nowMs); return;
+    }
+    const all=prev.concat(cur,nxt);
+    let k=0; for(let j=0;j<all.length;j++){ if(all[j].t<=nowMs) k=j; }
+    const b=all[k], nb=all[k+1];
+    const frac=(nowMs-b.t)/(nb.t-b.t);
+    $('bigName').textContent = BELL[b.i] + (frac>=0.5?'半':'');
+    $('etoName').textContent = ETO[b.i]+'の刻';
+    $('quarter').textContent = ETO[b.i]+'の刻 '+QTR[Math.min(3,Math.floor(frac*4))];
+    const left=nb.t-nowMs;
+    $('next').textContent = BELL[nb.i]+'('+hm(nb.t)+')まで '+dur(left);
+    $('len').textContent = (b.day?'昼':'夜')+'の一刻 '+dur(nb.t-b.t);
+    $('prog').style.width=(frac*100).toFixed(2)+'%';
+
+    // 表示中の地方日付(明け六つ前なら前日の並び)
+    const dayBells = nowMs < cur[0].t ? prev : cur;
+    $('schedTitle').textContent = state.dateOffsetDays ? (new Date(dayBells[0].t).getMonth()+1)+'月'+new Date(dayBells[0].t).getDate()+'日の鐘' : '今日の鐘';
+    $('sched').innerHTML = dayBells.map((x,j)=>{
+      const isNow = x.t===b.t;
+      return `<tr class="${isNow?'now':''}${j===5?' sep':''}"><td class="n">${BELL[x.i]}</td><td>${ETO[x.i]}の刻</td><td class="t">${hm(x.t)}</td><td class="t">${dur(x.len)}</td></tr>`;
+    }).join('');
+    drawDial(dayBells,nowMs);
+  }
+
+  // ---- 操作 ----
+  const dateIn=$('date');
+  function setDateInput(){
+    const d=addDays(new Date(),state.dateOffsetDays);
+    dateIn.value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  }
+  dateIn.addEventListener('change',()=>{
+    if(!dateIn.value) return;
+    const [y,m,d]=dateIn.value.split('-').map(Number);
+    const t=new Date(); const base=new Date(t.getFullYear(),t.getMonth(),t.getDate());
+    state.dateOffsetDays=Math.round((new Date(y,m-1,d)-base)/86400000);
+    render();
+  });
+  $('todayBtn').addEventListener('click',()=>{ state.dateOffsetDays=0; setDateInput(); render(); });
+  document.querySelectorAll('input[name=def]').forEach(r=>{
+    if(r.value===state.def) r.checked=true;
+    r.addEventListener('change',()=>{ state.def=r.value; save(); render(); });
+  });
+  function syncLL(){ $('lat').value=state.lat.toFixed(3); $('lon').value=state.lon.toFixed(3); $('placeName').textContent=state.place; }
+  $('applyLL').addEventListener('click',()=>{
+    const la=parseFloat($('lat').value), lo=parseFloat($('lon').value);
+    if(!(la>=-66&&la<=66&&lo>=-180&&lo<=180)){ $('geoMsg').textContent='緯度は−66〜66、経度は−180〜180の範囲で入力してください。'; return; }
+    state.lat=la; state.lon=lo; state.place='北緯'+la.toFixed(2)+'° 東経'+lo.toFixed(2)+'°'; $('geoMsg').textContent='';
+    syncLL(); save(); render();
+  });
+  $('geoBtn').addEventListener('click',()=>{
+    const msg=$('geoMsg');
+    if(!navigator.geolocation){ msg.textContent='このブラウザでは位置情報が使えません。緯度・経度を入力してください。'; return; }
+    msg.textContent='現在地を取得しています…';
+    navigator.geolocation.getCurrentPosition(p=>{
+      state.lat=p.coords.latitude; state.lon=p.coords.longitude; state.place='現在地';
+      msg.textContent=''; syncLL(); save(); render();
+    },()=>{ msg.textContent='現在地を取得できませんでした。緯度・経度を入力してください。'; },{timeout:10000,maximumAge:600000});
+  });
+
+  // ---- アラーム(iOSショートカット連携) ----
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const SHORTCUT='和時計アラーム';
+  function nextSix(){
+    const now=Date.now(), base=new Date(); base.setHours(0,0,0,0);
+    let dawn=null, dusk=null;
+    for(let k=0;k<3 && (!dawn||!dusk);k++){
+      const e=eventsFor(addDays(base,k)); if(!e) continue;
+      if(!dawn && e.dawn>now) dawn=e.dawn;
+      if(!dusk && e.dusk>now) dusk=e.dusk;
+    }
+    return {dawn,dusk};
+  }
+  const hmPlain = ms => { const d=new Date(ms); return d.getHours()+':'+pad(d.getMinutes()); };
+  function openSheet(){
+    const n=nextSix();
+    if(!n.dawn||!n.dusk){ alert('この場所・季節では六つの時刻が定まりません。'); return; }
+    $('tDawn').textContent=hm(n.dawn)+(new Date(n.dawn).getDate()!==new Date().getDate()?'(明日)':'');
+    $('tDusk').textContent=hm(n.dusk)+(new Date(n.dusk).getDate()!==new Date().getDate()?'(明日)':'');
+    $('sheet').dataset.dawn=n.dawn; $('sheet').dataset.dusk=n.dusk;
+    $('sheetMsg').textContent='';
+    $('sheet').classList.add('open'); $('sheetYes').focus();
+  }
+  function closeSheet(){ $('sheet').classList.remove('open'); }
+  function markAsked(){ try{ localStorage.setItem('wadokei-asked', new Date().toDateString()); }catch(e){} }
+  $('sheetNo').addEventListener('click',()=>{ markAsked(); closeSheet(); });
+  $('sheetYes').addEventListener('click',()=>{
+    const times=[];
+    if($('optDawn').checked) times.push(hmPlain(+$('sheet').dataset.dawn));
+    if($('optDusk').checked) times.push(hmPlain(+$('sheet').dataset.dusk));
+    if(!times.length){ $('sheetMsg').textContent='設定する鐘を一つ以上選んでください。'; return; }
+    const url='shortcuts://run-shortcut?name='+encodeURIComponent(SHORTCUT)+'&input=text&text='+encodeURIComponent(times.join(','));
+    markAsked();
+    window.location.href=url;
+    $('sheetMsg').textContent='ショートカットが開かない場合は、設定欄の手順で「'+SHORTCUT+'」を作ってあるか確認してください。時刻:'+times.join('、');
+  });
+  $('alarmBtn').addEventListener('click',openSheet);
+  if(!isIOS){ $('alarmField').style.display='none'; }
+  else{
+    let asked=''; try{ asked=localStorage.getItem('wadokei-asked')||''; }catch(e){}
+    if(asked!==new Date().toDateString()) setTimeout(openSheet,600);
+  }
+
+  syncLL(); setDateInput(); render();
+  setInterval(render,1000);
+})();
+</script>
+</body>
+</html>
