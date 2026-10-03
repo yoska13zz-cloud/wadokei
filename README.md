@@ -6,6 +6,8 @@ A web clock that shows the current time in Japan's Edo-period temporal hours. Da
 
 **公開ページ:** https://yoska13zz-cloud.github.io/wadokei/
 
+**Creator:** Yoska
+
 ## 機能
 
 - **和時計の文字盤**:正午を上にした24時間盤です。昼と夜の刻、鐘の位置(割駒)、十二支、刻の内(一刻を四つに分けた目盛り)、現代の時刻(12時間表記)を表示します。
@@ -41,7 +43,7 @@ A web clock that shows the current time in Japan's Edo-period temporal hours. Da
 GitHub Pages で `main` ブランチのルートを公開しています。
 
 1. ファイルを差し替えてコミットします。
-2. `index.html` を変えたときは、`sw.js` の `VERSION`(例:`wadokei-v8`)の数字を一つ上げます。上げないと、ホーム画面のアプリに古い版が残ることがあります。
+2. `index.html` を変えたときは、`sw.js` の `VERSION`(例:`wadokei-v9`)の数字を一つ上げます。上げないと、ホーム画面のアプリに古い版が残ることがあります。
 
 手元で動かすときは、フォルダでローカルサーバーを立てます。
 
