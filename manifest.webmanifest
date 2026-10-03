@@ -1,10 +1,17 @@
 {
   "name": "和時計",
   "short_name": "和時計",
+  "description": "不定時法の和時計 — Creator: Yoska",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#e4e7e3",
   "theme_color": "#22305a",
-  "icons": [{ "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }]
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
 }
