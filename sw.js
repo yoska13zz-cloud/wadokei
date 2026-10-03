@@ -1,5 +1,5 @@
 // 和時計 オフライン用サービスワーカー
-const VERSION = 'wadokei-v6';
+const VERSION = 'wadokei-v7';
 const CORE = ['./', './index.html', './apple-touch-icon.png', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {

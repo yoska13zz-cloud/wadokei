@@ -72,6 +72,7 @@ th,td{padding:.42em .6em;text-align:left;border-bottom:1px solid var(--line);whi
 th{font-weight:500;color:var(--sub);font-size:.82rem}
 td.n{font-family:var(--serif);font-weight:700;font-size:1.02rem}
 td.t{font-variant-numeric:tabular-nums}
+td small{color:var(--sub);font-size:.8em;margin-left:.35em;font-weight:400}
 tr.now td{background:color-mix(in srgb,var(--brass) 22%,transparent)}
 tr.sep td{border-bottom:2px solid var(--ink)}
 
@@ -110,25 +111,36 @@ details summary{cursor:pointer;font-size:.85rem;color:var(--sub);margin-top:.5em
 a.linkbtn{display:inline-block;font-size:.9rem;text-decoration:none;border:1px solid var(--ink);border-radius:999px;padding:.3em 1em}
 ol.steps{padding-left:1.3em;margin:.5em 0 0;font-size:.86rem}
 ol.steps li{margin-bottom:.3em}
+.tzrow{flex-wrap:nowrap}
+.tzrow select{flex:1;min-width:0}
+.tzrow button{flex:none}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1em}
+.lang{font-size:.82rem;padding:.2em .9em;flex:none}
+.en-name{margin:-.3em 0 .6em;font-family:var(--serif);font-weight:700;font-size:1.05rem;letter-spacing:.02em}
+.en-name:empty{display:none}
 .note{font-size:.82rem;color:var(--sub);margin-top:clamp(24px,4vw,40px);max-width:44em;line-height:1.8}
 </style>
 </head>
 <body>
 <main>
-  <h1>和時計</h1>
-  <p class="lede">江戸の時刻は、日の出前の「明け六つ」と日没後の「暮れ六つ」を境に昼と夜をそれぞれ六等分していました。季節で一刻の長さが伸び縮みする、その日の太陽にあわせた時刻を表示します。</p>
+  <div class="top">
+    <h1 data-i18n="h1">和時計</h1>
+    <button type="button" id="langBtn" class="lang" lang="en">English</button>
+  </div>
+  <p class="lede" data-i18n="lede">江戸の時刻は、日の出前の「明け六つ」と日没後の「暮れ六つ」を境に昼と夜をそれぞれ六等分していました。季節で一刻の長さが伸び縮みする、その日の太陽にあわせた時刻を表示します。</p>
 
   <section class="stage">
-    <div class="dial-wrap"><svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="和時計の文字盤"></svg></div>
+    <div class="dial-wrap"><svg id="dial" viewBox="-12 -12 424 424" role="img" data-i18n-aria="dialAria" aria-label="和時計の文字盤"></svg></div>
     <div>
       <div class="reading">
-        <div class="tate" aria-live="polite"><span class="big" id="bigName">—</span><span class="eto" id="etoName"></span></div>
+        <div class="tate" aria-live="polite" lang="ja"><span class="big" id="bigName">—</span><span class="eto" id="etoName"></span></div>
         <div class="facts">
           <div class="clock" id="modern">--:--:--</div>
+          <p class="en-name" id="enName"></p>
           <dl>
-            <dt>刻の内</dt><dd id="quarter">—</dd>
-            <dt>次の鐘</dt><dd id="next">—</dd>
-            <dt>この一刻</dt><dd id="len">—</dd>
+            <dt data-i18n="dtQuarter">刻の内</dt><dd id="quarter">—</dd>
+            <dt data-i18n="dtNext">次の鐘</dt><dd id="next">—</dd>
+            <dt data-i18n="dtLen">この一刻</dt><dd id="len">—</dd>
           </dl>
           <div class="bar" aria-hidden="true"><i id="prog"></i></div>
           <p class="small" id="hiLat"></p>
@@ -141,68 +153,68 @@ ol.steps li{margin-bottom:.3em}
     <div>
       <h2 id="schedTitle">今日の鐘</h2>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>鐘</th><th>刻</th><th>現代時刻</th><th>一刻の長さ</th></tr></thead>
+        <thead><tr><th data-i18n="thBell">鐘</th><th data-i18n="thHour">刻</th><th data-i18n="thTime">現代時刻</th><th data-i18n="thLen">一刻の長さ</th></tr></thead>
         <tbody id="sched"></tbody>
       </table></div>
     </div>
     <div class="settings">
       <div class="field">
-        <span class="label">場所</span>
-        <div class="row"><span class="place" id="placeName">江戸・日本橋</span><button id="geoBtn" type="button">現在地を使う</button></div>
-        <div class="row" style="margin-top:.5em"><select id="citySel" aria-label="主要都市"></select></div>
+        <span class="label" data-i18n="lblPlace">場所</span>
+        <div class="row"><span class="place" id="placeName">江戸・日本橋</span><button id="geoBtn" type="button" data-i18n="geoBtn">現在地を使う</button></div>
+        <div class="row" style="margin-top:.5em"><select id="citySel" data-i18n-aria="cityAria" aria-label="主要都市"></select></div>
         <div class="msg" id="geoMsg"></div>
         <details>
-          <summary>緯度・経度を入力する</summary>
+          <summary data-i18n="llSummary">緯度・経度を入力する</summary>
           <div class="row" style="margin-top:.5em">
-            <input type="number" id="lat" step="0.01" min="-90" max="90" aria-label="緯度">
-            <input type="number" id="lon" step="0.01" min="-180" max="180" aria-label="経度">
-            <button id="applyLL" type="button">反映</button>
+            <input type="number" id="lat" step="0.01" min="-90" max="90" data-i18n-aria="latAria" aria-label="緯度">
+            <input type="number" id="lon" step="0.01" min="-180" max="180" data-i18n-aria="lonAria" aria-label="経度">
+            <button id="applyLL" type="button" data-i18n="apply">反映</button>
           </div>
         </details>
       </div>
       <div class="field">
-        <label class="label" for="tzSel">時差(GMT)</label>
-        <div class="row">
-          <button id="tzMinus" type="button" aria-label="30分戻す">−</button>
+        <label class="label" for="tzSel" data-i18n="lblTz">時差(GMT)</label>
+        <div class="row tzrow">
+          <button id="tzMinus" type="button" data-i18n-aria="tzMinus" aria-label="時差を一つ戻す">−</button>
           <select id="tzSel"></select>
-          <button id="tzPlus" type="button" aria-label="30分進める">＋</button>
+          <button id="tzPlus" type="button" data-i18n-aria="tzPlus" aria-label="時差を一つ進める">＋</button>
         </div>
         <p class="small" id="tzInfo"></p>
       </div>
       <div class="field">
-        <label class="label" for="date">日付</label>
-        <div class="row"><input type="date" id="date"><button id="todayBtn" type="button">今日に戻す</button></div>
+        <label class="label" for="date" data-i18n="lblDate">日付</label>
+        <div class="row"><input type="date" id="date"><button id="todayBtn" type="button" data-i18n="todayBtn">今日に戻す</button></div>
       </div>
       <div class="field" id="alarmField">
-        <span class="label">アラーム(iPhone)</span>
-        <div class="row"><button id="alarmBtn" type="button">明け六つ・暮れ六つにアラームを設定</button></div>
-        <p class="small">はじめに一度だけ、アラームを作るショートカットをiPhoneに追加してください。名前は「和時計アラーム」のまま変えないでください。</p>
-        <div class="row" style="margin-top:.5em"><a class="linkbtn" href="https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57" target="_blank" rel="noopener">ショートカットを追加</a></div>
+        <span class="label" data-i18n="lblAlarm">アラーム(iPhone)</span>
+        <div class="row"><button id="alarmBtn" type="button" data-i18n="alarmBtn">明け六つ・暮れ六つにアラームを設定</button></div>
+        <p class="small" data-i18n="alarmHelp">はじめに一度だけ、アラームを作るショートカットをiPhoneに追加してください。名前は「和時計アラーム」のまま変えないでください。</p>
+        <div class="row" style="margin-top:.5em"><a class="linkbtn" href="https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57" target="_blank" rel="noopener" data-i18n="addShortcut">ショートカットを追加</a></div>
       </div>
       <div class="field">
-        <span class="label">六つの決め方</span>
+        <span class="label" data-i18n="lblDef">六つの決め方</span>
         <div class="radio">
-          <label><input type="radio" name="def" value="kansei" checked> 寛政暦(太陽が地平線下 7°21′40″)</label>
-          <label><input type="radio" name="def" value="sun"> 日の出・日の入り</label>
+          <label><input type="radio" name="def" value="kansei" checked> <span data-i18n="defKansei">寛政暦(太陽が地平線下 7°21′40″)</span></label>
+          <label><input type="radio" name="def" value="sun"> <span data-i18n="defSun">日の出・日の入り</span></label>
         </div>
       </div>
     </div>
   </section>
 
-  <p class="note">鐘の名は「明け六つ・五つ・四つ・九つ・八つ・七つ」の順に数が減り、昼と夜で繰り返します。各刻は鐘が鳴った時点から始まるものとし、刻の中ほどを「半」(例:九つ半)と呼んでいます。「刻の内」は一刻を四つに分けた位置で、丑の刻の三つめがいわゆる丑三つ時です。刻の区切り方には時代や地域で諸説あります。高緯度では実際の太陽どおりに計算するため、夏は夜の刻が、冬は昼の刻がどこまでも短くなります。太陽が六つの高さを越えない白夜・極夜の日は、昼(または夜)が真夜中から真夜中(正午から正午)まで続くものとし、反対側の刻は長さ0になります。日付を変えると、そのときの時計の針の位置をその日の太陽に当てはめて表示します。</p>
+  <p class="note" data-i18n="note">鐘の名は「明け六つ・五つ・四つ・九つ・八つ・七つ」の順に数が減り、昼と夜で繰り返します。各刻は鐘が鳴った時点から始まるものとし、刻の中ほどを「半」(例:九つ半)と呼んでいます。「刻の内」は一刻を四つに分けた位置で、丑の刻の三つめがいわゆる丑三つ時です。刻の区切り方には時代や地域で諸説あります。高緯度では実際の太陽どおりに計算するため、夏は夜の刻が、冬は昼の刻がどこまでも短くなります。太陽が六つの高さを越えない白夜・極夜の日は、昼(または夜)が真夜中から真夜中(正午から正午)まで続くものとし、反対側の刻は長さ0になります。日付を変えると、そのときの時計の針の位置をその日の太陽に当てはめて表示します。</p>
 </main>
 
 <div class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="sheetTitle">
   <div class="sheet-in">
-    <button type="button" class="sheet-x" id="sheetX" aria-label="閉じる">×</button>
-    <h3 id="sheetTitle">鐘の時刻にアラームを設定しますか？</h3>
-    <label class="opt"><input type="checkbox" id="optDawn" checked><b>明け六つ</b><span id="tDawn">--:--</span></label>
-    <label class="opt"><input type="checkbox" id="optDusk" checked><b>暮れ六つ</b><span id="tDusk">--:--</span></label>
-    <p class="small">iPhoneの「和時計アラーム」ショートカットが開き、時計Appにアラームが作られます。六つの時刻は毎日少しずつずれるので、そのつど設定し直してください。</p>
-    <p class="small">ショートカットがまだの場合は、先に<a href="https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57" target="_blank" rel="noopener">ショートカットを追加</a>してください。</p>
+    <button type="button" class="sheet-x" id="sheetX" data-i18n-aria="close" aria-label="閉じる">×</button>
+    <h3 id="sheetTitle" data-i18n="sheetTitle">鐘の時刻にアラームを設定しますか？</h3>
+    <label class="opt"><input type="checkbox" id="optDawn" checked><b data-i18n="dawn6">明け六つ</b><span id="tDawn">--:--</span></label>
+    <label class="opt"><input type="checkbox" id="optDusk" checked><b data-i18n="dusk6">暮れ六つ</b><span id="tDusk">--:--</span></label>
+    <p class="small" data-i18n="sheetHelp">iPhoneの「和時計アラーム」ショートカットが開き、時計Appにアラームが作られます。六つの時刻は毎日少しずつずれるので、そのつど設定し直してください。</p>
+    <p class="small" data-i18n-html="sheetHelp2">ショートカットがまだの場合は、先に<a href="https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57" target="_blank" rel="noopener">ショートカットを追加</a>してください。</p>
     <div class="acts">
-      <button type="button" id="sheetNo">今日は設定しない</button>
-      <button type="button" class="primary" id="sheetYes">設定する</button>
+      <button type="button" id="sheetNo" data-i18n="sheetNo">今日は設定しない</button>
+      <button type="button" class="primary" id="sheetYes" data-i18n="sheetYes">設定する</button>
     </div>
     <p class="small" id="sheetTz"></p>
     <p class="small" id="sheetMsg" style="color:var(--shu)"></p>
@@ -215,29 +227,100 @@ ol.steps li{margin-bottom:.3em}
   const BELL = ['明け六つ','五つ','四つ','九つ','八つ','七つ','暮れ六つ','五つ','四つ','九つ','八つ','七つ'];
   const NUM  = ['六','五','四','九','八','七','六','五','四','九','八','七'];
   const QTR  = ['一つ','二つ','三つ','四つ'];
+  const BELL_EN = ['Ake-mutsu','Itsutsu','Yotsu','Kokonotsu','Yatsu','Nanatsu','Kure-mutsu','Itsutsu','Yotsu','Kokonotsu','Yatsu','Nanatsu'];
+  const NUMV = [6,5,4,9,8,7,6,5,4,9,8,7];
+  const ETO_EN = ['Rabbit','Dragon','Snake','Horse','Sheep','Monkey','Rooster','Dog','Boar','Rat','Ox','Tiger'];
+  const QTR_EN = ['1st quarter','2nd quarter','3rd quarter','4th quarter'];
+  const MON_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const SC_URL = 'https://www.icloud.com/shortcuts/245cd533a7d04abda56ccfc75037cf57';
+
+  // ---- 言語 ----
+  const I18N = {
+    ja:{
+      title:'和時計 — 不定時法でいまを知る', h1:'和時計', other:'English', otherLang:'en',
+      lede:'江戸の時刻は、日の出前の「明け六つ」と日没後の「暮れ六つ」を境に昼と夜をそれぞれ六等分していました。季節で一刻の長さが伸び縮みする、その日の太陽にあわせた時刻を表示します。',
+      dialAria:'和時計の文字盤', dtQuarter:'刻の内', dtNext:'次の鐘', dtLen:'この一刻',
+      thBell:'鐘', thHour:'刻', thTime:'現代時刻', thLen:'一刻の長さ',
+      lblPlace:'場所', geoBtn:'現在地を使う', cityAria:'主要都市', llSummary:'緯度・経度を入力する', latAria:'緯度', lonAria:'経度', apply:'反映',
+      lblTz:'時差(GMT)', tzMinus:'時差を一つ戻す', tzPlus:'時差を一つ進める', lblDate:'日付', todayBtn:'今日に戻す',
+      lblAlarm:'アラーム(iPhone)', alarmBtn:'明け六つ・暮れ六つにアラームを設定',
+      alarmHelp:'はじめに一度だけ、アラームを作るショートカットをiPhoneに追加してください。名前は「和時計アラーム」のまま変えないでください。',
+      addShortcut:'ショートカットを追加', lblDef:'六つの決め方', defKansei:'寛政暦(太陽が地平線下 7°21′40″)', defSun:'日の出・日の入り',
+      note:'鐘の名は「明け六つ・五つ・四つ・九つ・八つ・七つ」の順に数が減り、昼と夜で繰り返します。各刻は鐘が鳴った時点から始まるものとし、刻の中ほどを「半」(例:九つ半)と呼んでいます。「刻の内」は一刻を四つに分けた位置で、丑の刻の三つめがいわゆる丑三つ時です。刻の区切り方には時代や地域で諸説あります。高緯度では実際の太陽どおりに計算するため、夏は夜の刻が、冬は昼の刻がどこまでも短くなります。太陽が六つの高さを越えない白夜・極夜の日は、昼(または夜)が真夜中から真夜中(正午から正午)まで続くものとし、反対側の刻は長さ0になります。日付を変えると、そのときの時計の針の位置をその日の太陽に当てはめて表示します。',
+      close:'閉じる', sheetTitle:'鐘の時刻にアラームを設定しますか？', dawn6:'明け六つ', dusk6:'暮れ六つ',
+      sheetHelp:'iPhoneの「和時計アラーム」ショートカットが開き、時計Appにアラームが作られます。六つの時刻は毎日少しずつずれるので、そのつど設定し直してください。',
+      sheetHelp2:'ショートカットがまだの場合は、先に<a href="'+SC_URL+'" target="_blank" rel="noopener">ショートカットを追加</a>してください。',
+      sheetNo:'今日は設定しない', sheetYes:'設定する',
+      here:'現在地', chooseCity:'都市を選ぶ…', tzAuto:'この端末に合わせる', tzCity:'場所の標準時', tzManual:'手動',
+      tzNow:'いま', tzDevice:'この端末の時刻', tzDst:'(夏時間は自動)',
+      today:'今日の鐘', dayOf:d=>(d.getUTCMonth()+1)+'月'+d.getUTCDate()+'日の鐘',
+      am:'午前', pm:'午後', dayHour:'昼の一刻 ', nightHour:'夜の一刻 ',
+      white:six=>'白夜:太陽が一晩中'+six+'より下に沈まないため、昼が続き夜の刻はありません。',
+      dark:six=>'極夜:太陽が'+six+'より上に昇らないため、夜が続き昼の刻はありません。',
+      sixK:'地平線下7°21′40″', sixS:'地平線',
+      llErr:'緯度は−90〜90、経度は−180〜180の範囲で入力してください。',
+      geoNo:'このブラウザでは位置情報が使えません。緯度・経度を入力してください。', geoWait:'現在地を取得しています…',
+      geoFail:'現在地を取得できませんでした。緯度・経度を入力してください。',
+      tomorrow:'(明日)', done:' 設定済み', noSix:'この場所・季節では六つの時刻が定まりません。',
+      allDone:'次の明け六つ・暮れ六つはどちらも設定済みです。', pickOne:'設定する鐘を一つ以上選んでください。',
+      devTz:g=>'※アラームの時刻はこのiPhoneの時計('+g+')に合わせて表示しています。',
+    },
+    en:{
+      title:'Wadokei — Japanese temporal-hour clock', h1:'Wadokei', other:'日本語', otherLang:'ja',
+      lede:'In Edo-period Japan, day and night were each divided into six equal hours (koku), bounded by the bells of Ake-mutsu before sunrise and Kure-mutsu after sunset. The hours stretch and shrink with the seasons; this clock shows the time by the sun of the chosen day.',
+      dialAria:'Wadokei dial', dtQuarter:'Quarter', dtNext:'Next bell', dtLen:'This hour',
+      thBell:'Bell', thHour:'Hour', thTime:'Clock time', thLen:'Length',
+      lblPlace:'Location', geoBtn:'Use my location', cityAria:'Major cities', llSummary:'Enter latitude / longitude', latAria:'Latitude', lonAria:'Longitude', apply:'Apply',
+      lblTz:'Time zone (GMT)', tzMinus:'Previous offset', tzPlus:'Next offset', lblDate:'Date', todayBtn:'Back to today',
+      lblAlarm:'Alarm (iPhone)', alarmBtn:'Set alarms for Ake-mutsu & Kure-mutsu',
+      alarmHelp:'First, add the alarm shortcut to your iPhone (only once). Keep its name as “和時計アラーム”.',
+      addShortcut:'Add shortcut', lblDef:'Defining the sixth bells', defKansei:'Kansei calendar (sun 7°21′40″ below the horizon)', defSun:'Sunrise / sunset',
+      note:'The bells count down Ake-mutsu (6), 5, 4, 9, 8, 7 and repeat for day and night. Each hour begins when its bell rings, and its midpoint is called “han” (e.g. Kokonotsu-han). “Quarter” divides each hour into four; the third quarter of the Hour of the Ox is the famous ushimitsu-doki. How the hours were divided varied by era and region. At high latitudes the clock follows the real sun, so night hours shrink in summer and day hours in winter, without limit. On midnight-sun or polar-night days, when the sun never crosses the sixth-bell altitude, day (or night) runs from midnight to midnight (noon to noon) and the other half has zero length. When you change the date, the current clock time is applied to that day’s sun.',
+      close:'Close', sheetTitle:'Set alarms for the bells?', dawn6:'Ake-mutsu', dusk6:'Kure-mutsu',
+      sheetHelp:'The “和時計アラーム” shortcut opens and creates alarms in the Clock app. The bell times shift a little every day, so set them again each time.',
+      sheetHelp2:'If you haven’t yet, <a href="'+SC_URL+'" target="_blank" rel="noopener">add the shortcut</a> first.',
+      sheetNo:'Not today', sheetYes:'Set alarms',
+      here:'Current location', chooseCity:'Choose a city…', tzAuto:'Match this device', tzCity:'Local standard time', tzManual:'Manual',
+      tzNow:'Now', tzDevice:'This device', tzDst:' (DST automatic)',
+      today:'Today’s bells', dayOf:d=>'Bells for '+MON_EN[d.getUTCMonth()]+' '+d.getUTCDate(),
+      am:'AM', pm:'PM', dayHour:'Day hour: ', nightHour:'Night hour: ',
+      white:six=>'Midnight sun: the sun stays above '+six+' all night, so daytime continues and there are no night hours.',
+      dark:six=>'Polar night: the sun never rises above '+six+', so night continues and there are no daytime hours.',
+      sixK:'7°21′40″ below the horizon', sixS:'the horizon',
+      llErr:'Enter a latitude between −90 and 90 and a longitude between −180 and 180.',
+      geoNo:'Location is not available in this browser. Please enter latitude and longitude.', geoWait:'Getting your location…',
+      geoFail:'Could not get your location. Please enter latitude and longitude.',
+      tomorrow:' (tomorrow)', done:' — already set', noSix:'The sixth bells are not defined for this place and season.',
+      allDone:'Both the next Ake-mutsu and Kure-mutsu are already set.', pickOne:'Choose at least one bell.',
+      devTz:g=>'Alarm times are shown in this iPhone’s clock ('+g+').',
+    }
+  };
+  let LANG = 'ja';
+  const t = k => I18N[LANG][k];
   const DEF_H0 = { kansei: -(7 + 21/60 + 40/3600), sun: -0.833 };
   const rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
-  const latLabel = la => (la>=0?'北緯':'南緯')+Math.abs(la).toFixed(1)+'°';
-  const llLabel = (la,lo) => latLabel(la)+' '+(lo>=0?'東経':'西経')+Math.abs(lo).toFixed(2)+'°';
+  const llLabel = (la,lo) => LANG==='en'
+    ? Math.abs(la).toFixed(2)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(2)+'°'+(lo>=0?'E':'W')
+    : (la>=0?'北緯':'南緯')+Math.abs(la).toFixed(2)+'° '+(lo>=0?'東経':'西経')+Math.abs(lo).toFixed(2)+'°';
 
-  // 主要都市:[表示名, 緯度, 経度, タイムゾーン]
+  // 主要都市:[日本語名, 緯度, 経度, タイムゾーン, 英語名]
   const CITIES = [
-    ['江戸・日本橋', 35.684, 139.774, 'Asia/Tokyo'],
-    ['東京',        35.681, 139.767, 'Asia/Tokyo'],
-    ['大阪',        34.702, 135.496, 'Asia/Tokyo'],
-    ['札幌',        43.062, 141.354, 'Asia/Tokyo'],
-    ['那覇',        26.212, 127.681, 'Asia/Tokyo'],
-    ['ソウル',      37.566, 126.978, 'Asia/Seoul'],
-    ['北京',        39.904, 116.407, 'Asia/Shanghai'],
-    ['シンガポール', 1.352, 103.820, 'Asia/Singapore'],
-    ['シドニー',   -33.869, 151.209, 'Australia/Sydney'],
-    ['London',      51.507,  -0.128, 'Europe/London'],
-    ['Paris',       48.857,   2.352, 'Europe/Paris'],
-    ['Utrecht',     52.091,   5.122, 'Europe/Amsterdam'],
-    ['Reykjavík',   64.146, -21.942, 'Atlantic/Reykjavik'],
-    ['Longyearbyen',78.223,  15.647, 'Arctic/Longyearbyen'],
-    ['New York',    40.713, -74.006, 'America/New_York'],
-    ['Los Angeles', 34.052,-118.244, 'America/Los_Angeles'],
+    ['江戸・日本橋', 35.684, 139.774, 'Asia/Tokyo', 'Edo (Nihonbashi)'],
+    ['東京',        35.681, 139.767, 'Asia/Tokyo', 'Tokyo'],
+    ['大阪',        34.702, 135.496, 'Asia/Tokyo', 'Osaka'],
+    ['札幌',        43.062, 141.354, 'Asia/Tokyo', 'Sapporo'],
+    ['那覇',        26.212, 127.681, 'Asia/Tokyo', 'Naha'],
+    ['ソウル',      37.566, 126.978, 'Asia/Seoul', 'Seoul'],
+    ['北京',        39.904, 116.407, 'Asia/Shanghai', 'Beijing'],
+    ['シンガポール', 1.352, 103.820, 'Asia/Singapore', 'Singapore'],
+    ['シドニー',   -33.869, 151.209, 'Australia/Sydney', 'Sydney'],
+    ['London',      51.507,  -0.128, 'Europe/London', 'London'],
+    ['Paris',       48.857,   2.352, 'Europe/Paris', 'Paris'],
+    ['Utrecht',     52.091,   5.122, 'Europe/Amsterdam', 'Utrecht'],
+    ['Reykjavík',   64.146, -21.942, 'Atlantic/Reykjavik', 'Reykjavík'],
+    ['Longyearbyen',78.223,  15.647, 'Arctic/Longyearbyen', 'Longyearbyen'],
+    ['New York',    40.713, -74.006, 'America/New_York', 'New York'],
+    ['Los Angeles', 34.052,-118.244, 'America/Los_Angeles', 'Los Angeles'],
   ];
   // 手動の時差:30分きざみ+実在する45分ずれ
   // (+5:45 ネパール、+8:45 豪ユークラ周辺、+12:45 チャタム諸島、+13:45 チャタム諸島の夏時間)
@@ -250,17 +333,18 @@ ol.steps li{margin-bottom:.3em}
   const DEVICE_ZONE = (()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(e){ return null; } })();
 
   // tz: 'auto'(端末の時刻) / 'city'(場所の標準時・夏時間あり) / 数値(GMTからの分、手動)
-  const state = { lat:35.684, lon:139.774, place:'江戸・日本橋', def:'kansei', tz:'auto', zone:'Asia/Tokyo', dateOffsetDays:0 };
+  const state = { lat:35.684, lon:139.774, place:'江戸・日本橋', def:'kansei', tz:'auto', zone:'Asia/Tokyo', dateOffsetDays:0, lang:null };
   try{
     const s = JSON.parse(localStorage.getItem('wadokei') || 'null');
     if(s && typeof s.lat==='number'){
       Object.assign(state,{lat:s.lat,lon:s.lon,place:s.place||state.place,def:s.def||'kansei'});
       if(s.tz==='auto'||s.tz==='city') state.tz=s.tz;
       else if(typeof s.tz==='number') state.tz=nearestTz(s.tz);
+      if(s.lang==='ja'||s.lang==='en') state.lang=s.lang;
       state.zone = ('zone' in s) ? s.zone : (state.place==='江戸・日本橋' ? 'Asia/Tokyo' : DEVICE_ZONE);
     }
   }catch(e){}
-  function save(){ try{ localStorage.setItem('wadokei', JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,def:state.def,tz:state.tz,zone:state.zone})); }catch(e){} }
+  function save(){ try{ localStorage.setItem('wadokei', JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,def:state.def,tz:state.tz,zone:state.zone,lang:state.lang})); }catch(e){} }
 
   // ---- 時差 ----
   const fmtCache = {};
@@ -327,7 +411,8 @@ ol.steps li{margin-bottom:.3em}
   const pad = v => String(v).padStart(2,'0');
   const hm = ms => { const d=Z(ms); return pad(d.getUTCHours())+':'+pad(d.getUTCMinutes()); };
   const hmDevice = ms => { const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); };
-  const dur = ms => { const m=Math.round(ms/60000); return Math.floor(m/60)+'時間'+pad(m%60)+'分'; };
+  const dur = ms => { const m=Math.round(ms/60000); return LANG==='en' ? Math.floor(m/60)+'h '+pad(m%60)+'m' : Math.floor(m/60)+'時間'+pad(m%60)+'分'; };
+  const bellName = i => LANG==='en' ? BELL_EN[i] : BELL[i];
   const minutesOfDay = ms => { const d=Z(ms); return d.getUTCHours()*60+d.getUTCMinutes()+d.getUTCSeconds()/60; };
 
   // 文字盤:正午を上、真夜中を下にした24時間盤
@@ -363,7 +448,7 @@ ol.steps li{margin-bottom:.3em}
         s+=`<text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="${main?11:9.5}" font-weight="${main?500:400}" fill="var(--brass-hi)" font-family="var(--sans)" opacity="${main?.95:.7}">${lab}</text>`;
       }
     }
-    [[360,'午前'],[1080,'午後']].forEach(([m,l])=>{
+    [[360,t('am')],[1080,t('pm')]].forEach(([m,l])=>{
       const [x,y]=pt(m,72); s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="9" fill="var(--brass-hi)" font-family="var(--sans)" opacity=".6">${l}</text>`;
     });
     // 外側の縁:刻の内(一刻を四つに分けた位置)。中ほどの「半」はやや長く
@@ -410,27 +495,31 @@ ol.steps li{margin-bottom:.3em}
     let k=0; for(let j=0;j<all.length;j++){ if(all[j].t<=nowMs) k=j; }
     const b=all[k], nb=all[k+1];
     const frac=(nowMs-b.t)/(nb.t-b.t);
-    $('bigName').textContent = BELL[b.i] + (frac>=0.5?'半':'');
+    const half=frac>=0.5, qi=Math.min(3,Math.floor(frac*4)), left=nb.t-nowMs;
+    $('bigName').textContent = BELL[b.i] + (half?'半':'');
     $('etoName').textContent = ETO[b.i]+'の刻';
-    $('quarter').textContent = ETO[b.i]+'の刻 '+QTR[Math.min(3,Math.floor(frac*4))];
-    const left=nb.t-nowMs;
-    $('next').textContent = BELL[nb.i]+'('+hm(nb.t)+')まで '+dur(left);
-    $('len').textContent = (b.day?'昼':'夜')+'の一刻 '+dur(nb.t-b.t);
+    if(LANG==='en'){
+      $('enName').textContent = BELL_EN[b.i]+(half?'-han':'')+' · Hour of the '+ETO_EN[b.i];
+      $('quarter').textContent = ETO_EN[b.i]+', '+QTR_EN[qi];
+      $('next').textContent = BELL_EN[nb.i]+' ('+hm(nb.t)+') in '+dur(left);
+    }else{
+      $('enName').textContent = '';
+      $('quarter').textContent = ETO[b.i]+'の刻 '+QTR[qi];
+      $('next').textContent = BELL[nb.i]+'('+hm(nb.t)+')まで '+dur(left);
+    }
+    $('len').textContent = (b.day?t('dayHour'):t('nightHour'))+dur(nb.t-b.t);
     $('prog').style.width=(frac*100).toFixed(2)+'%';
 
     // 表示中の地方日付(明け六つ前なら前日の並び)
     const dayBells = days.find(d=>d.includes(b));
-    $('schedTitle').textContent = state.dateOffsetDays ? (dayBells.date.getUTCMonth()+1)+'月'+dayBells.date.getUTCDate()+'日の鐘' : '今日の鐘';
+    $('schedTitle').textContent = state.dateOffsetDays ? t('dayOf')(dayBells.date) : t('today');
     $('sched').innerHTML = dayBells.map((x,j)=>{
       const isNow = x===b;
-      return `<tr class="${isNow?'now':''}${j===5?' sep':''}"><td class="n">${BELL[x.i]}</td><td>${ETO[x.i]}の刻</td><td class="t">${hm(x.t)}</td><td class="t">${dur(x.len)}</td></tr>`;
+      return `<tr class="${isNow?'now':''}${j===5?' sep':''}"><td class="n">${LANG==='en'?BELL_EN[x.i]+' <small>'+NUMV[x.i]+'</small>':BELL[x.i]}</td><td>${LANG==='en'?ETO_EN[x.i]+' <small>'+ETO[x.i]+'</small>':ETO[x.i]+'の刻'}</td><td class="t">${hm(x.t)}</td><td class="t">${dur(x.len)}</td></tr>`;
     }).join('');
     drawDial(dayBells,nowMs);
-    const sixName = state.def==='kansei' ? '地平線下7°21′40″' : '地平線';
-    $('hiLat').textContent =
-      dayBells.polar==='white' ? '白夜:太陽が一晩中'+sixName+'より下に沈まないため、昼が続き夜の刻はありません。'
-    : dayBells.polar==='dark'  ? '極夜:太陽が'+sixName+'より上に昇らないため、夜が続き昼の刻はありません。'
-    : '';
+    const sixName = state.def==='kansei' ? t('sixK') : t('sixS');
+    $('hiLat').textContent = dayBells.polar ? t(dayBells.polar)(sixName) : '';
   }
 
   // ---- 操作 ----
@@ -451,7 +540,8 @@ ol.steps li{margin-bottom:.3em}
   const zoneGmt = (zone,ms) => { try{ return gmtLabel(zoneOffsetMin(ms,zone)); }catch(e){ return ''; } };
   function buildCityOptions(){
     const ms=virtualNow();
-    citySel.innerHTML='<option value="">都市を選ぶ…</option>'+CITIES.map((c,i)=>`<option value="${i}">${c[0]}(${zoneGmt(c[3],ms)})</option>`).join('');
+    const nm = c => LANG==='en' ? c[4] : c[0];
+    citySel.innerHTML=`<option value="">${t('chooseCity')}</option>`+CITIES.map((c,i)=>`<option value="${i}">${nm(c)} (${zoneGmt(c[3],ms)})</option>`).join('');
     const i=CITIES.findIndex(c=>c[0]===state.place && c[3]===state.zone);
     citySel.value = i>=0 ? String(i) : '';
   }
@@ -465,9 +555,9 @@ ol.steps li{margin-bottom:.3em}
   const tzSel=$('tzSel');
   function buildTzOptions(){
     const ms=virtualNow();
-    let h=`<option value="auto">この端末に合わせる ${gmtLabel(deviceOff(ms))}</option>`;
-    h+=`<option value="city"${state.zone?'':' disabled'}>場所の標準時${state.zone?' '+zoneGmt(state.zone,ms)+'('+state.zone+')':''}</option>`;
-    h+='<optgroup label="手動">';
+    let h=`<option value="auto">${t('tzAuto')} ${gmtLabel(deviceOff(ms))}</option>`;
+    h+=`<option value="city"${state.zone?'':' disabled'}>${t('tzCity')}${state.zone?' '+zoneGmt(state.zone,ms)+' ('+state.zone+')':''}</option>`;
+    h+=`<optgroup label="${t('tzManual')}">`;
     for(const m of TZ_OPTIONS) h+=`<option value="${m}">${gmtLabel(m)}</option>`;
     h+='</optgroup>';
     tzSel.innerHTML=h;
@@ -475,10 +565,10 @@ ol.steps li{margin-bottom:.3em}
   }
   function tzInfo(){
     const now=virtualNow(), off=offMin(now);
-    let t = state.tz==='auto' ? 'この端末の時刻'+(DEVICE_ZONE?'('+DEVICE_ZONE+')':'')
-          : state.tz==='city' ? state.zone+'(夏時間は自動)'
-          : '手動';
-    $('tzInfo').textContent='いま '+gmtLabel(off)+' ・ '+t;
+    const d = state.tz==='auto' ? t('tzDevice')+(DEVICE_ZONE?' ('+DEVICE_ZONE+')':'')
+          : state.tz==='city' ? state.zone+t('tzDst')
+          : t('tzManual');
+    $('tzInfo').textContent=t('tzNow')+' '+gmtLabel(off)+' · '+d;
   }
   function stepTz(d){
     // いまの時差から、メニューの隣の値へ一つ動かす
@@ -499,11 +589,17 @@ ol.steps li{margin-bottom:.3em}
     if(r.value===state.def) r.checked=true;
     r.addEventListener('change',()=>{ state.def=r.value; save(); render(); });
   });
-  function syncLL(){ $('lat').value=state.lat.toFixed(3); $('lon').value=state.lon.toFixed(3); $('placeName').textContent=state.place; }
+  function placeLabel(){
+    const c=CITIES.find(c=>c[0]===state.place);
+    if(c) return LANG==='en' ? c[4] : c[0];
+    if(state.place==='現在地') return t('here');
+    return llLabel(state.lat,state.lon);
+  }
+  function syncLL(){ $('lat').value=state.lat.toFixed(3); $('lon').value=state.lon.toFixed(3); $('placeName').textContent=placeLabel(); }
   $('applyLL').addEventListener('click',()=>{
     const la=parseFloat($('lat').value), lo=parseFloat($('lon').value);
-    if(!(la>=-90&&la<=90&&lo>=-180&&lo<=180)){ $('geoMsg').textContent='緯度は−90〜90、経度は−180〜180の範囲で入力してください。'; return; }
-    state.lat=la; state.lon=lo; state.place=llLabel(la,lo); $('geoMsg').textContent='';
+    if(!(la>=-90&&la<=90&&lo>=-180&&lo<=180)){ $('geoMsg').textContent=t('llErr'); return; }
+    state.lat=la; state.lon=lo; state.place='ll'; $('geoMsg').textContent='';
     // 都市の標準時を使っていたら、経度から決めた手動の時差に切り替える
     if(state.tz==='city') state.tz=Math.round(lo/15)*60;
     state.zone=null; citySel.value='';
@@ -511,13 +607,13 @@ ol.steps li{margin-bottom:.3em}
   });
   $('geoBtn').addEventListener('click',()=>{
     const msg=$('geoMsg');
-    if(!navigator.geolocation){ msg.textContent='このブラウザでは位置情報が使えません。緯度・経度を入力してください。'; return; }
-    msg.textContent='現在地を取得しています…';
+    if(!navigator.geolocation){ msg.textContent=t('geoNo'); return; }
+    msg.textContent=t('geoWait');
     navigator.geolocation.getCurrentPosition(p=>{
       state.lat=p.coords.latitude; state.lon=p.coords.longitude; state.place='現在地';
       state.zone=DEVICE_ZONE; state.tz='auto'; citySel.value='';
       msg.textContent=''; afterPlaceChange();
-    },()=>{ msg.textContent='現在地を取得できませんでした。緯度・経度を入力してください。'; },{timeout:10000,maximumAge:600000});
+    },()=>{ msg.textContent=t('geoFail'); },{timeout:10000,maximumAge:600000});
   });
 
   // ---- アラーム(iOSショートカット連携) ----
@@ -545,24 +641,24 @@ ol.steps li{margin-bottom:.3em}
   const isSent = ms => getSent().includes(minuteKey(ms));
   function setOpt(box,label,ms){
     const done=isSent(ms);
-    const tomorrow=new Date(ms).getDate()!==new Date().getDate()?'(明日)':'';
+    const tomorrow=new Date(ms).getDate()!==new Date().getDate()?t('tomorrow'):'';
     box.checked=!done; box.disabled=done;
     // 時計Appのアラームは端末の時刻で動くので、ここは端末の時刻で表示する
-    label.textContent=hmDevice(ms)+tomorrow+(done?' 設定済み':'');
+    label.textContent=hmDevice(ms)+tomorrow+(done?t('done'):'');
   }
   function openSheet(auto){
     const n=nextSix();
-    if(!n.dawn||!n.dusk){ if(!auto) alert('この場所・季節では六つの時刻が定まりません。'); return; }
+    if(!n.dawn||!n.dusk){ if(!auto) alert(t('noSix')); return; }
     const allDone=isSent(n.dawn)&&isSent(n.dusk);
     if(auto && allDone) return;
     setOpt($('optDawn'),$('tDawn'),n.dawn);
     setOpt($('optDusk'),$('tDusk'),n.dusk);
     $('sheet').dataset.dawn=n.dawn; $('sheet').dataset.dusk=n.dusk;
     $('sheetYes').disabled=allDone;
-    $('sheetMsg').textContent=allDone?'次の明け六つ・暮れ六つはどちらも設定済みです。':'';
+    $('sheetMsg').textContent=allDone?t('allDone'):'';
     const now=Date.now();
     $('sheetTz').textContent = offMin(now)!==deviceOff(now)
-      ? '※アラームの時刻はこのiPhoneの時計('+gmtLabel(deviceOff(now))+')に合わせて表示しています。' : '';
+      ? t('devTz')(gmtLabel(deviceOff(now))) : '';
     $('sheet').classList.add('open'); (allDone?$('sheetX'):$('sheetYes')).focus();
   }
   function closeSheet(){ $('sheet').classList.remove('open'); }
@@ -573,7 +669,7 @@ ol.steps li{margin-bottom:.3em}
     const dawn=+$('sheet').dataset.dawn, dusk=+$('sheet').dataset.dusk;
     if($('optDawn').checked && !$('optDawn').disabled){ times.push(hmPlain(dawn)); sent.push(minuteKey(dawn)); }
     if($('optDusk').checked && !$('optDusk').disabled){ times.push(hmPlain(dusk)); sent.push(minuteKey(dusk)); }
-    if(!times.length){ $('sheetMsg').textContent='設定する鐘を一つ以上選んでください。'; return; }
+    if(!times.length){ $('sheetMsg').textContent=t('pickOne'); return; }
     const url='shortcuts://run-shortcut?name='+encodeURIComponent(SHORTCUT)+'&input=text&text='+encodeURIComponent(times.join(','));
     addSent(sent);
     markAsked();
@@ -592,7 +688,20 @@ ol.steps li{margin-bottom:.3em}
     if(asked!==new Date().toDateString()) setTimeout(()=>openSheet(true),600);
   }
 
-  syncLL(); buildCityOptions(); buildTzOptions(); tzInfo(); setDateInput(); render();
+  function applyLang(){
+    document.documentElement.lang = LANG;
+    document.title = t('title');
+    document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+    document.querySelectorAll('[data-i18n-html]').forEach(el=>el.innerHTML=t(el.dataset.i18nHtml));
+    document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAria)));
+    const lb=$('langBtn'); lb.textContent=t('other'); lb.lang=t('otherLang');
+    $('geoMsg').textContent='';
+    syncLL(); buildCityOptions(); buildTzOptions(); tzInfo(); render();
+  }
+  LANG = state.lang || ((navigator.language||'ja').toLowerCase().startsWith('ja') ? 'ja' : 'en');
+  $('langBtn').addEventListener('click',()=>{ LANG = LANG==='ja' ? 'en' : 'ja'; state.lang=LANG; save(); applyLang(); });
+
+  setDateInput(); applyLang();
   setInterval(tzInfo,60000);
   // 日付を変えると夏時間で時差が変わることがあるので、メニューの GMT 表示も更新
   const refreshTz=()=>{ buildCityOptions(); buildTzOptions(); tzInfo(); };
