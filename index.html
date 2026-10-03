@@ -82,6 +82,8 @@ tr.sep td{border-bottom:2px solid var(--ink)}
 .row{display:flex;flex-wrap:wrap;gap:.5em;align-items:center}
 input[type=date],input[type=number]{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:.35em .5em;max-width:100%}
 input[type=number]{width:7.5em}
+select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:.35em .5em;max-width:100%}
+.clock .gmt{font-family:var(--sans);font-size:.75rem;font-weight:400;color:var(--sub);margin-left:.6em}
 button{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:1px solid var(--ink);border-radius:999px;padding:.3em 1em;cursor:pointer}
 button:disabled{opacity:.4;cursor:default}
 button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
@@ -129,6 +131,7 @@ ol.steps li{margin-bottom:.3em}
             <dt>この一刻</dt><dd id="len">—</dd>
           </dl>
           <div class="bar" aria-hidden="true"><i id="prog"></i></div>
+          <p class="small" id="hiLat"></p>
         </div>
       </div>
     </div>
@@ -146,15 +149,25 @@ ol.steps li{margin-bottom:.3em}
       <div class="field">
         <span class="label">場所</span>
         <div class="row"><span class="place" id="placeName">江戸・日本橋</span><button id="geoBtn" type="button">現在地を使う</button></div>
+        <div class="row" style="margin-top:.5em"><select id="citySel" aria-label="主要都市"></select></div>
         <div class="msg" id="geoMsg"></div>
         <details>
           <summary>緯度・経度を入力する</summary>
           <div class="row" style="margin-top:.5em">
-            <input type="number" id="lat" step="0.01" min="-66" max="66" aria-label="緯度">
+            <input type="number" id="lat" step="0.01" min="-90" max="90" aria-label="緯度">
             <input type="number" id="lon" step="0.01" min="-180" max="180" aria-label="経度">
             <button id="applyLL" type="button">反映</button>
           </div>
         </details>
+      </div>
+      <div class="field">
+        <label class="label" for="tzSel">時差(GMT)</label>
+        <div class="row">
+          <button id="tzMinus" type="button" aria-label="30分戻す">−</button>
+          <select id="tzSel"></select>
+          <button id="tzPlus" type="button" aria-label="30分進める">＋</button>
+        </div>
+        <p class="small" id="tzInfo"></p>
       </div>
       <div class="field">
         <label class="label" for="date">日付</label>
@@ -176,7 +189,7 @@ ol.steps li{margin-bottom:.3em}
     </div>
   </section>
 
-  <p class="note">鐘の名は「明け六つ・五つ・四つ・九つ・八つ・七つ」の順に数が減り、昼と夜で繰り返します。各刻は鐘が鳴った時点から始まるものとし、刻の中ほどを「半」(例:九つ半)と呼んでいます。「刻の内」は一刻を四つに分けた位置で、丑の刻の三つめがいわゆる丑三つ時です。刻の区切り方には時代や地域で諸説あります。日付を変えると、そのときの時計の針の位置をその日の太陽に当てはめて表示します。</p>
+  <p class="note">鐘の名は「明け六つ・五つ・四つ・九つ・八つ・七つ」の順に数が減り、昼と夜で繰り返します。各刻は鐘が鳴った時点から始まるものとし、刻の中ほどを「半」(例:九つ半)と呼んでいます。「刻の内」は一刻を四つに分けた位置で、丑の刻の三つめがいわゆる丑三つ時です。刻の区切り方には時代や地域で諸説あります。高緯度では実際の太陽どおりに計算するため、夏は夜の刻が、冬は昼の刻がどこまでも短くなります。太陽が六つの高さを越えない白夜・極夜の日は、昼(または夜)が真夜中から真夜中(正午から正午)まで続くものとし、反対側の刻は長さ0になります。日付を変えると、そのときの時計の針の位置をその日の太陽に当てはめて表示します。</p>
 </main>
 
 <div class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="sheetTitle">
@@ -191,6 +204,7 @@ ol.steps li{margin-bottom:.3em}
       <button type="button" id="sheetNo">今日は設定しない</button>
       <button type="button" class="primary" id="sheetYes">設定する</button>
     </div>
+    <p class="small" id="sheetTz"></p>
     <p class="small" id="sheetMsg" style="color:var(--shu)"></p>
   </div>
 </div>
@@ -203,13 +217,67 @@ ol.steps li{margin-bottom:.3em}
   const QTR  = ['一つ','二つ','三つ','四つ'];
   const DEF_H0 = { kansei: -(7 + 21/60 + 40/3600), sun: -0.833 };
   const rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
+  const latLabel = la => (la>=0?'北緯':'南緯')+Math.abs(la).toFixed(1)+'°';
+  const llLabel = (la,lo) => latLabel(la)+' '+(lo>=0?'東経':'西経')+Math.abs(lo).toFixed(2)+'°';
 
-  const state = { lat:35.684, lon:139.774, place:'江戸・日本橋', def:'kansei', dateOffsetDays:0 };
+  // 主要都市:[表示名, 緯度, 経度, タイムゾーン]
+  const CITIES = [
+    ['江戸・日本橋', 35.684, 139.774, 'Asia/Tokyo'],
+    ['東京',        35.681, 139.767, 'Asia/Tokyo'],
+    ['大阪',        34.702, 135.496, 'Asia/Tokyo'],
+    ['札幌',        43.062, 141.354, 'Asia/Tokyo'],
+    ['那覇',        26.212, 127.681, 'Asia/Tokyo'],
+    ['ソウル',      37.566, 126.978, 'Asia/Seoul'],
+    ['北京',        39.904, 116.407, 'Asia/Shanghai'],
+    ['シンガポール', 1.352, 103.820, 'Asia/Singapore'],
+    ['シドニー',   -33.869, 151.209, 'Australia/Sydney'],
+    ['London',      51.507,  -0.128, 'Europe/London'],
+    ['Paris',       48.857,   2.352, 'Europe/Paris'],
+    ['Utrecht',     52.091,   5.122, 'Europe/Amsterdam'],
+    ['Reykjavík',   64.146, -21.942, 'Atlantic/Reykjavik'],
+    ['Longyearbyen',78.223,  15.647, 'Arctic/Longyearbyen'],
+    ['New York',    40.713, -74.006, 'America/New_York'],
+    ['Los Angeles', 34.052,-118.244, 'America/Los_Angeles'],
+  ];
+  // 手動の時差:30分きざみ+実在する45分ずれ
+  // (+5:45 ネパール、+8:45 豪ユークラ周辺、+12:45 チャタム諸島、+13:45 チャタム諸島の夏時間)
+  const TZ_OPTIONS = (()=>{
+    const a=[]; for(let m=-12*60;m<=14*60;m+=30) a.push(m);
+    a.push(345, 525, 765, 825);
+    return a.sort((x,y)=>x-y);
+  })();
+  const nearestTz = m => TZ_OPTIONS.reduce((b,x)=>Math.abs(x-m)<Math.abs(b-m)?x:b, TZ_OPTIONS[0]);
+  const DEVICE_ZONE = (()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(e){ return null; } })();
+
+  // tz: 'auto'(端末の時刻) / 'city'(場所の標準時・夏時間あり) / 数値(GMTからの分、手動)
+  const state = { lat:35.684, lon:139.774, place:'江戸・日本橋', def:'kansei', tz:'auto', zone:'Asia/Tokyo', dateOffsetDays:0 };
   try{
     const s = JSON.parse(localStorage.getItem('wadokei') || 'null');
-    if(s && typeof s.lat==='number'){ Object.assign(state,{lat:s.lat,lon:s.lon,place:s.place||state.place,def:s.def||'kansei'}); }
+    if(s && typeof s.lat==='number'){
+      Object.assign(state,{lat:s.lat,lon:s.lon,place:s.place||state.place,def:s.def||'kansei'});
+      if(s.tz==='auto'||s.tz==='city') state.tz=s.tz;
+      else if(typeof s.tz==='number') state.tz=nearestTz(s.tz);
+      state.zone = ('zone' in s) ? s.zone : (state.place==='江戸・日本橋' ? 'Asia/Tokyo' : DEVICE_ZONE);
+    }
   }catch(e){}
-  function save(){ try{ localStorage.setItem('wadokei', JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,def:state.def})); }catch(e){} }
+  function save(){ try{ localStorage.setItem('wadokei', JSON.stringify({lat:state.lat,lon:state.lon,place:state.place,def:state.def,tz:state.tz,zone:state.zone})); }catch(e){} }
+
+  // ---- 時差 ----
+  const fmtCache = {};
+  function zoneOffsetMin(ms, zone){
+    const f = fmtCache[zone] || (fmtCache[zone] = new Intl.DateTimeFormat('en-US',{timeZone:zone,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'}));
+    const p = {}; f.formatToParts(ms).forEach(x=>p[x.type]=x.value);
+    const u = Date.UTC(+p.year, +p.month-1, +p.day, (+p.hour)%24, +p.minute);
+    return Math.round((u - Math.floor(ms/60000)*60000)/60000);
+  }
+  const deviceOff = ms => -new Date(ms).getTimezoneOffset();
+  function offMin(ms){
+    if(typeof state.tz==='number') return state.tz;
+    if(state.tz==='city' && state.zone){ try{ return zoneOffsetMin(ms,state.zone); }catch(e){} }
+    return deviceOff(ms);
+  }
+  const Z = ms => new Date(ms + offMin(ms)*60000);   // 選んだ時差での日時(getUTC*で読む)
+  function gmtLabel(min){ const a=Math.abs(min); return 'GMT'+(min<0?'−':'+')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0'); }
 
   // ---- 太陽計算:指定した地方日付の、太陽高度 h0 の時刻(朝・夕)を返す ----
   function sunEvents(y,m,d,h0){
@@ -225,32 +293,42 @@ ol.steps li{margin-bottom:.3em}
     let e = L - ra; e = ((e+540)%360)-180;
     const eotMin = 4*e;
     const noonUTC = Date.UTC(y,m,d,0) + (720 - 4*lon - eotMin)*60000;
-    const cosH = (Math.sin(rad(h0)) - Math.sin(rad(lat))*Math.sin(dec)) / (Math.cos(rad(lat))*Math.cos(dec));
-    if(cosH > 1 || cosH < -1) return null;
-    const H = deg(Math.acos(cosH));
-    return { dawn: noonUTC - 4*H*60000, dusk: noonUTC + 4*H*60000, noon: noonUTC };
+    // 時角 H(度)。太陽が一日中 h0 より上(白夜)なら H=180、一日中下(極夜)なら H=0。
+    // つまり白夜では昼が真夜中から真夜中まで続き夜の刻は長さ0、極夜では昼の刻が正午に縮む。
+    let c = (Math.sin(rad(h0)) - Math.sin(rad(lat))*Math.sin(dec)) / (Math.cos(rad(lat))*Math.cos(dec));
+    if(isNaN(c)) c = 1;
+    const polar = c < -1 ? 'white' : c > 1 ? 'dark' : null;
+    const H = deg(Math.acos(Math.max(-1, Math.min(1, c))));
+    return { dawn: noonUTC - 4*H*60000, dusk: noonUTC + 4*H*60000, noon: noonUTC, polar };
   }
+  // 日付は「UTC 0時」の Date で表す(getUTC* で年月日を読む)
   function eventsFor(dateObj){
-    return sunEvents(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), DEF_H0[state.def]);
+    return sunEvents(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate(), DEF_H0[state.def]);
   }
-  function addDays(dt,k){ const x=new Date(dt); x.setDate(x.getDate()+k); return x; }
+  function addDays(dt,k){ return new Date(dt.getTime()+k*86400000); }
+  function zoneDay(ms){ const d=Z(ms); return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); }
 
   // その地方日付 d の明け六つから翌日の明け六つまでの12の鐘
   function bellsOfDay(dt){
     const a = eventsFor(dt), b = eventsFor(addDays(dt,1));
     if(!a || !b) return null;
-    const out=[]; const dl=(a.dusk-a.dawn)/6, nl=(b.dawn-a.dusk)/6;
+    // 白夜の境目では今日の暮れ六つと翌日の明け六つが数秒前後するので、逆転しないようにそろえる
+    const dusk = Math.min(a.dusk, b.dawn);
+    const out=[]; const dl=(dusk-a.dawn)/6, nl=(b.dawn-dusk)/6;
     for(let k=0;k<6;k++) out.push({t:a.dawn+k*dl, i:k, len:dl, day:true});
-    for(let k=0;k<6;k++) out.push({t:a.dusk+k*nl, i:k+6, len:nl, day:false});
+    for(let k=0;k<6;k++) out.push({t:dusk+k*nl, i:k+6, len:nl, day:false});
+    out.polar = a.polar || b.polar;
+    out.date = dt;
     return out;
   }
 
   // ---- 表示 ----
   const $ = id => document.getElementById(id);
   const pad = v => String(v).padStart(2,'0');
-  const hm = ms => { const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+  const hm = ms => { const d=Z(ms); return pad(d.getUTCHours())+':'+pad(d.getUTCMinutes()); };
+  const hmDevice = ms => { const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); };
   const dur = ms => { const m=Math.round(ms/60000); return Math.floor(m/60)+'時間'+pad(m%60)+'分'; };
-  const minutesOfDay = ms => { const d=new Date(ms); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; };
+  const minutesOfDay = ms => { const d=Z(ms); return d.getUTCHours()*60+d.getUTCMinutes()+d.getUTCSeconds()/60; };
 
   // 文字盤:正午を上、真夜中を下にした24時間盤
   const C=200;
@@ -267,15 +345,38 @@ ol.steps li{margin-bottom:.3em}
     let s='';
     s+=`<circle cx="200" cy="200" r="198" fill="var(--brass)"/>`;
     s+=`<circle cx="200" cy="200" r="190" fill="var(--ai-deep)"/>`;
-    s+=`<path d="${sector(dusk,dawn,112,182)}" fill="var(--night)"/>`;
-    s+=`<path d="${sector(dawn,dusk,112,182)}" fill="var(--day)" opacity=".92"/>`;
-    // 現代の1時間目盛り
-    for(let h=0;h<24;h++){
-      const [x1,y1]=pt(h*60,184),[x2,y2]=pt(h*60,h%6?188:192);
-      s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--brass-hi)" stroke-width="${h%6?1:2}"/>`;
+    const dayLen=bells[6].t-bells[0].t, nightLen=bells[11].t+bells[11].len-bells[6].t;
+    const ring = fill => `<circle cx="200" cy="200" r="147" fill="none" stroke="${fill}" stroke-width="70"/>`;
+    if(nightLen < 60000) s+=ring('var(--day)');        // 白夜:一日中が昼
+    else if(dayLen < 60000) s+=ring('var(--night)');   // 極夜:一日中が夜
+    else{
+      s+=`<path d="${sector(dusk,dawn,112,182)}" fill="var(--night)"/>`;
+      s+=`<path d="${sector(dawn,dusk,112,182)}" fill="var(--day)" opacity=".92"/>`;
     }
-    [[0,'0'],[6,'6'],[12,'12'],[18,'18']].forEach(([h,l])=>{
-      const [x,y]=pt(h*60,92); s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" fill="var(--brass-hi)" font-family="var(--sans)" opacity=".8">${l}時</text>`;
+    // 内側の円のふち:現代の時刻(12時間表記)の1時間ごとの目盛り
+    for(let q=0;q<48;q+=2){
+      const h=q/2, major=true, main=q%6===0;
+      const [x1,y1]=pt(q*30,111),[x2,y2]=pt(q*30, main?101:major?104:107);
+      s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--brass-hi)" stroke-width="${main?2:major?1.2:.7}" opacity="${major?1:.6}"/>`;
+      if(major){
+        const [x,y]=pt(q*30,92), lab=(h%12)||12;
+        s+=`<text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="${main?11:9.5}" font-weight="${main?500:400}" fill="var(--brass-hi)" font-family="var(--sans)" opacity="${main?.95:.7}">${lab}</text>`;
+      }
+    }
+    [[360,'午前'],[1080,'午後']].forEach(([m,l])=>{
+      const [x,y]=pt(m,72); s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="9" fill="var(--brass-hi)" font-family="var(--sans)" opacity=".6">${l}</text>`;
+    });
+    // 外側の縁:刻の内(一刻を四つに分けた位置)。中ほどの「半」はやや長く
+    bells.forEach(b=>{
+      if(b.len < 60000) return;
+      const m0=minutesOfDay(b.t), lm=b.len/60000;
+      for(let j=1;j<4;j++){
+        const [x1,y1]=pt(m0+lm*j/4,183),[x2,y2]=pt(m0+lm*j/4, j===2?190:187);
+        s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--brass-hi)" stroke-width="${j===2?1.6:1}"/>`;
+      }
+      // 鐘の位置は外縁まで通す
+      const [x1,y1]=pt(m0,182),[x2,y2]=pt(m0,190);
+      s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--brass-hi)" stroke-width="2.2"/>`;
     });
     // 割駒(鐘の位置)
     bells.forEach(b=>{
@@ -284,6 +385,7 @@ ol.steps li{margin-bottom:.3em}
       s+=`<line x1="${lx1}" y1="${ly1}" x2="${lx2}" y2="${ly2}" stroke="var(--brass)" stroke-width="1.4"/>`;
       const [x,y]=pt(m+ (b.len/60000)/2 ,163), [ex,ey]=pt(m+(b.len/60000)/2,128);
       const fill = b.day ? 'var(--ai-deep)' : 'var(--day)';
+      if(b.len < 45*60000) return; // 一刻が短すぎて文字が重なるときは線だけ
       s+=`<text x="${x}" y="${y+8}" text-anchor="middle" font-size="22" font-weight="800" font-family="var(--serif)" fill="${fill}">${NUM[b.i]}</text>`;
       s+=`<text x="${ex}" y="${ey+6}" text-anchor="middle" font-size="15" font-weight="700" font-family="var(--serif)" fill="${b.day?'var(--shu)':'var(--brass-hi)'}">${ETO[b.i]}</text>`;
     });
@@ -294,24 +396,17 @@ ol.steps li{margin-bottom:.3em}
     svg.innerHTML=s;
   }
 
-  function virtualNow(){
-    const now=new Date();
-    if(!state.dateOffsetDays) return now.getTime();
-    return addDays(now,state.dateOffsetDays).getTime();
-  }
+  function virtualNow(){ return Date.now() + state.dateOffsetDays*86400000; }
 
   function render(){
-    const nowMs=virtualNow(), nowD=new Date(nowMs);
-    const today=new Date(nowD.getFullYear(),nowD.getMonth(),nowD.getDate());
-    const prev=bellsOfDay(addDays(today,-1)), cur=bellsOfDay(today), nxt=bellsOfDay(addDays(today,1));
-    $('modern').textContent = pad(nowD.getHours())+':'+pad(nowD.getMinutes())+':'+pad(nowD.getSeconds());
+    const nowMs=virtualNow(), nowD=Z(nowMs);
+    const today=zoneDay(nowMs);
+    // 時差を大きくずらしても今が必ず入るよう、前後2日ぶんの鐘を並べる
+    const days=[-2,-1,0,1,2].map(k=>bellsOfDay(addDays(today,k)));
+    $('modern').innerHTML = pad(nowD.getUTCHours())+':'+pad(nowD.getUTCMinutes())+':'+pad(nowD.getUTCSeconds())
+      + '<span class="gmt">'+gmtLabel(offMin(nowMs))+'</span>';
 
-    if(!prev||!cur||!nxt){
-      $('bigName').textContent='—'; $('etoName').textContent='';
-      ['quarter','next','len'].forEach(k=>$(k).textContent='白夜・極夜のため計算できません');
-      $('sched').innerHTML=''; drawDial(null,nowMs); return;
-    }
-    const all=prev.concat(cur,nxt);
+    const all=[].concat(...days);
     let k=0; for(let j=0;j<all.length;j++){ if(all[j].t<=nowMs) k=j; }
     const b=all[k], nb=all[k+1];
     const frac=(nowMs-b.t)/(nb.t-b.t);
@@ -324,28 +419,81 @@ ol.steps li{margin-bottom:.3em}
     $('prog').style.width=(frac*100).toFixed(2)+'%';
 
     // 表示中の地方日付(明け六つ前なら前日の並び)
-    const dayBells = nowMs < cur[0].t ? prev : cur;
-    $('schedTitle').textContent = state.dateOffsetDays ? (new Date(dayBells[0].t).getMonth()+1)+'月'+new Date(dayBells[0].t).getDate()+'日の鐘' : '今日の鐘';
+    const dayBells = days.find(d=>d.includes(b));
+    $('schedTitle').textContent = state.dateOffsetDays ? (dayBells.date.getUTCMonth()+1)+'月'+dayBells.date.getUTCDate()+'日の鐘' : '今日の鐘';
     $('sched').innerHTML = dayBells.map((x,j)=>{
-      const isNow = x.t===b.t;
+      const isNow = x===b;
       return `<tr class="${isNow?'now':''}${j===5?' sep':''}"><td class="n">${BELL[x.i]}</td><td>${ETO[x.i]}の刻</td><td class="t">${hm(x.t)}</td><td class="t">${dur(x.len)}</td></tr>`;
     }).join('');
     drawDial(dayBells,nowMs);
+    const sixName = state.def==='kansei' ? '地平線下7°21′40″' : '地平線';
+    $('hiLat').textContent =
+      dayBells.polar==='white' ? '白夜:太陽が一晩中'+sixName+'より下に沈まないため、昼が続き夜の刻はありません。'
+    : dayBells.polar==='dark'  ? '極夜:太陽が'+sixName+'より上に昇らないため、夜が続き昼の刻はありません。'
+    : '';
   }
 
   // ---- 操作 ----
   const dateIn=$('date');
   function setDateInput(){
-    const d=addDays(new Date(),state.dateOffsetDays);
-    dateIn.value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    const d=addDays(zoneDay(Date.now()),state.dateOffsetDays);
+    dateIn.value=d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());
   }
   dateIn.addEventListener('change',()=>{
     if(!dateIn.value) return;
     const [y,m,d]=dateIn.value.split('-').map(Number);
-    const t=new Date(); const base=new Date(t.getFullYear(),t.getMonth(),t.getDate());
-    state.dateOffsetDays=Math.round((new Date(y,m-1,d)-base)/86400000);
+    state.dateOffsetDays=Math.round((Date.UTC(y,m-1,d)-zoneDay(Date.now()))/86400000);
     render();
   });
+
+  // 都市の選択
+  const citySel=$('citySel');
+  const zoneGmt = (zone,ms) => { try{ return gmtLabel(zoneOffsetMin(ms,zone)); }catch(e){ return ''; } };
+  function buildCityOptions(){
+    const ms=virtualNow();
+    citySel.innerHTML='<option value="">都市を選ぶ…</option>'+CITIES.map((c,i)=>`<option value="${i}">${c[0]}(${zoneGmt(c[3],ms)})</option>`).join('');
+    const i=CITIES.findIndex(c=>c[0]===state.place && c[3]===state.zone);
+    citySel.value = i>=0 ? String(i) : '';
+  }
+  citySel.addEventListener('change',()=>{
+    const c=CITIES[+citySel.value]; if(!c) return;
+    state.lat=c[1]; state.lon=c[2]; state.place=c[0]; state.zone=c[3]; state.tz='city';
+    $('geoMsg').textContent=''; afterPlaceChange();
+  });
+
+  // 時差(GMT)
+  const tzSel=$('tzSel');
+  function buildTzOptions(){
+    const ms=virtualNow();
+    let h=`<option value="auto">この端末に合わせる ${gmtLabel(deviceOff(ms))}</option>`;
+    h+=`<option value="city"${state.zone?'':' disabled'}>場所の標準時${state.zone?' '+zoneGmt(state.zone,ms)+'('+state.zone+')':''}</option>`;
+    h+='<optgroup label="手動">';
+    for(const m of TZ_OPTIONS) h+=`<option value="${m}">${gmtLabel(m)}</option>`;
+    h+='</optgroup>';
+    tzSel.innerHTML=h;
+    tzSel.value = typeof state.tz==='number' ? String(state.tz) : state.tz;
+  }
+  function tzInfo(){
+    const now=virtualNow(), off=offMin(now);
+    let t = state.tz==='auto' ? 'この端末の時刻'+(DEVICE_ZONE?'('+DEVICE_ZONE+')':'')
+          : state.tz==='city' ? state.zone+'(夏時間は自動)'
+          : '手動';
+    $('tzInfo').textContent='いま '+gmtLabel(off)+' ・ '+t;
+  }
+  function stepTz(d){
+    // いまの時差から、メニューの隣の値へ一つ動かす
+    const cur = offMin(virtualNow());
+    const next = d>0 ? TZ_OPTIONS.find(x=>x>cur) : [...TZ_OPTIONS].reverse().find(x=>x<cur);
+    state.tz = next ?? cur;
+    afterTzChange();
+  }
+  function afterTzChange(){ save(); buildTzOptions(); tzInfo(); setDateInput(); render(); }
+  function afterPlaceChange(){ syncLL(); buildCityOptions(); afterTzChange(); }
+  tzSel.addEventListener('change',()=>{
+    const v=tzSel.value; state.tz = (v==='auto'||v==='city') ? v : parseInt(v,10); afterTzChange();
+  });
+  $('tzMinus').addEventListener('click',()=>stepTz(-1));
+  $('tzPlus').addEventListener('click',()=>stepTz(1));
   $('todayBtn').addEventListener('click',()=>{ state.dateOffsetDays=0; setDateInput(); render(); });
   document.querySelectorAll('input[name=def]').forEach(r=>{
     if(r.value===state.def) r.checked=true;
@@ -354,9 +502,12 @@ ol.steps li{margin-bottom:.3em}
   function syncLL(){ $('lat').value=state.lat.toFixed(3); $('lon').value=state.lon.toFixed(3); $('placeName').textContent=state.place; }
   $('applyLL').addEventListener('click',()=>{
     const la=parseFloat($('lat').value), lo=parseFloat($('lon').value);
-    if(!(la>=-66&&la<=66&&lo>=-180&&lo<=180)){ $('geoMsg').textContent='緯度は−66〜66、経度は−180〜180の範囲で入力してください。'; return; }
-    state.lat=la; state.lon=lo; state.place='北緯'+la.toFixed(2)+'° 東経'+lo.toFixed(2)+'°'; $('geoMsg').textContent='';
-    syncLL(); save(); render();
+    if(!(la>=-90&&la<=90&&lo>=-180&&lo<=180)){ $('geoMsg').textContent='緯度は−90〜90、経度は−180〜180の範囲で入力してください。'; return; }
+    state.lat=la; state.lon=lo; state.place=llLabel(la,lo); $('geoMsg').textContent='';
+    // 都市の標準時を使っていたら、経度から決めた手動の時差に切り替える
+    if(state.tz==='city') state.tz=Math.round(lo/15)*60;
+    state.zone=null; citySel.value='';
+    afterPlaceChange();
   });
   $('geoBtn').addEventListener('click',()=>{
     const msg=$('geoMsg');
@@ -364,7 +515,8 @@ ol.steps li{margin-bottom:.3em}
     msg.textContent='現在地を取得しています…';
     navigator.geolocation.getCurrentPosition(p=>{
       state.lat=p.coords.latitude; state.lon=p.coords.longitude; state.place='現在地';
-      msg.textContent=''; syncLL(); save(); render();
+      state.zone=DEVICE_ZONE; state.tz='auto'; citySel.value='';
+      msg.textContent=''; afterPlaceChange();
     },()=>{ msg.textContent='現在地を取得できませんでした。緯度・経度を入力してください。'; },{timeout:10000,maximumAge:600000});
   });
 
@@ -372,10 +524,10 @@ ol.steps li{margin-bottom:.3em}
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   const SHORTCUT='和時計アラーム';
   function nextSix(){
-    const now=Date.now(), base=new Date(); base.setHours(0,0,0,0);
+    const now=Date.now(), base=addDays(zoneDay(now),-1);
     let dawn=null, dusk=null;
-    for(let k=0;k<3 && (!dawn||!dusk);k++){
-      const e=eventsFor(addDays(base,k)); if(!e) continue;
+    for(let k=0;k<4 && (!dawn||!dusk);k++){
+      const e=eventsFor(addDays(base,k)); if(!e || e.polar) continue; // 白夜・極夜の日は鐘が鳴らない
       if(!dawn && e.dawn>now) dawn=e.dawn;
       if(!dusk && e.dusk>now) dusk=e.dusk;
     }
@@ -395,7 +547,8 @@ ol.steps li{margin-bottom:.3em}
     const done=isSent(ms);
     const tomorrow=new Date(ms).getDate()!==new Date().getDate()?'(明日)':'';
     box.checked=!done; box.disabled=done;
-    label.textContent=hm(ms)+tomorrow+(done?' 設定済み':'');
+    // 時計Appのアラームは端末の時刻で動くので、ここは端末の時刻で表示する
+    label.textContent=hmDevice(ms)+tomorrow+(done?' 設定済み':'');
   }
   function openSheet(auto){
     const n=nextSix();
@@ -407,6 +560,9 @@ ol.steps li{margin-bottom:.3em}
     $('sheet').dataset.dawn=n.dawn; $('sheet').dataset.dusk=n.dusk;
     $('sheetYes').disabled=allDone;
     $('sheetMsg').textContent=allDone?'次の明け六つ・暮れ六つはどちらも設定済みです。':'';
+    const now=Date.now();
+    $('sheetTz').textContent = offMin(now)!==deviceOff(now)
+      ? '※アラームの時刻はこのiPhoneの時計('+gmtLabel(deviceOff(now))+')に合わせて表示しています。' : '';
     $('sheet').classList.add('open'); (allDone?$('sheetX'):$('sheetYes')).focus();
   }
   function closeSheet(){ $('sheet').classList.remove('open'); }
@@ -436,7 +592,12 @@ ol.steps li{margin-bottom:.3em}
     if(asked!==new Date().toDateString()) setTimeout(()=>openSheet(true),600);
   }
 
-  syncLL(); setDateInput(); render();
+  syncLL(); buildCityOptions(); buildTzOptions(); tzInfo(); setDateInput(); render();
+  setInterval(tzInfo,60000);
+  // 日付を変えると夏時間で時差が変わることがあるので、メニューの GMT 表示も更新
+  const refreshTz=()=>{ buildCityOptions(); buildTzOptions(); tzInfo(); };
+  dateIn.addEventListener('change',refreshTz);
+  $('todayBtn').addEventListener('click',refreshTz);
   setInterval(render,1000);
 })();
 </script>
