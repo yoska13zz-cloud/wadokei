@@ -261,8 +261,8 @@ ol.steps li{margin-bottom:.3em}
       llErr:'緯度は−90〜90、経度は−180〜180の範囲で入力してください。',
       geoNo:'このブラウザでは位置情報が使えません。緯度・経度を入力してください。', geoWait:'現在地を取得しています…',
       geoFail:'現在地を取得できませんでした。緯度・経度を入力してください。',
-      tomorrow:'(明日)', done:' 設定済み', noSix:'この場所・季節では六つの時刻が定まりません。',
-      allDone:'次の明け六つ・暮れ六つはどちらも設定済みです。', pickOne:'設定する鐘を一つ以上選んでください。',
+      tomorrow:'(明日)', done:' (設定済み)', noSix:'この場所・季節では六つの時刻が定まりません。',
+      allDone:'どちらも設定済みです。アラームを消してしまった場合は、チェックを入れればもう一度追加できます。', pickOne:'設定する鐘を一つ以上選んでください。',
       devTz:g=>'※アラームの時刻はこのiPhoneの時計('+g+')に合わせて表示しています。',
     },
     en:{
@@ -290,8 +290,8 @@ ol.steps li{margin-bottom:.3em}
       llErr:'Enter a latitude between −90 and 90 and a longitude between −180 and 180.',
       geoNo:'Location is not available in this browser. Please enter latitude and longitude.', geoWait:'Getting your location…',
       geoFail:'Could not get your location. Please enter latitude and longitude.',
-      tomorrow:' (tomorrow)', done:' — already set', noSix:'The sixth bells are not defined for this place and season.',
-      allDone:'Both the next Ake-mutsu and Kure-mutsu are already set.', pickOne:'Choose at least one bell.',
+      tomorrow:' (tomorrow)', done:' (already set)', noSix:'The sixth bells are not defined for this place and season.',
+      allDone:'Both are already set. If you deleted an alarm, tick it to add it again.', pickOne:'Choose at least one bell.',
       devTz:g=>'Alarm times are shown in this iPhone’s clock ('+g+').',
     }
   };
@@ -642,7 +642,7 @@ ol.steps li{margin-bottom:.3em}
   function setOpt(box,label,ms){
     const done=isSent(ms);
     const tomorrow=new Date(ms).getDate()!==new Date().getDate()?t('tomorrow'):'';
-    box.checked=!done; box.disabled=done;
+    box.checked=!done; box.disabled=false;
     // 時計Appのアラームは端末の時刻で動くので、ここは端末の時刻で表示する
     label.textContent=hmDevice(ms)+tomorrow+(done?t('done'):'');
   }
@@ -654,12 +654,12 @@ ol.steps li{margin-bottom:.3em}
     setOpt($('optDawn'),$('tDawn'),n.dawn);
     setOpt($('optDusk'),$('tDusk'),n.dusk);
     $('sheet').dataset.dawn=n.dawn; $('sheet').dataset.dusk=n.dusk;
-    $('sheetYes').disabled=allDone;
+    $('sheetYes').disabled=false;
     $('sheetMsg').textContent=allDone?t('allDone'):'';
     const now=Date.now();
     $('sheetTz').textContent = offMin(now)!==deviceOff(now)
       ? t('devTz')(gmtLabel(deviceOff(now))) : '';
-    $('sheet').classList.add('open'); (allDone?$('sheetX'):$('sheetYes')).focus();
+    $('sheet').classList.add('open'); $('sheetYes').focus();
   }
   function closeSheet(){ $('sheet').classList.remove('open'); }
   function markAsked(){ try{ localStorage.setItem('wadokei-asked', new Date().toDateString()); }catch(e){} }
@@ -667,8 +667,8 @@ ol.steps li{margin-bottom:.3em}
   $('sheetYes').addEventListener('click',()=>{
     const times=[], sent=[];
     const dawn=+$('sheet').dataset.dawn, dusk=+$('sheet').dataset.dusk;
-    if($('optDawn').checked && !$('optDawn').disabled){ times.push(hmPlain(dawn)); sent.push(minuteKey(dawn)); }
-    if($('optDusk').checked && !$('optDusk').disabled){ times.push(hmPlain(dusk)); sent.push(minuteKey(dusk)); }
+    if($('optDawn').checked){ times.push(hmPlain(dawn)); sent.push(minuteKey(dawn)); }
+    if($('optDusk').checked){ times.push(hmPlain(dusk)); sent.push(minuteKey(dusk)); }
     if(!times.length){ $('sheetMsg').textContent=t('pickOne'); return; }
     const url='shortcuts://run-shortcut?name='+encodeURIComponent(SHORTCUT)+'&input=text&text='+encodeURIComponent(times.join(','));
     addSent(sent);
